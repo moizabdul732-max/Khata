@@ -1745,178 +1745,325 @@ function renderSettings(){
   };
 }
 <div style="padding:14px;border:1px solid #ccc;border-radius:10px;margin:10px 0">
-  <b>Google Drive Backup</b>
-  <p id="gdStatus" style="font-size:13px;opacity:.7;margin:6px 0">Abhi tak backup nahi liya</p>
-  <button onclick="gdBackup()">Backup</button>
-  <button onclick="gdRestore()">Restore</button>
+
+  <b>Google Drive Backup</b>
+
+  <p id="gdStatus" style="font-size:13px;opacity:.7;margin:6px 0">Abhi tak backup nahi liya</p>
+
+  <button onclick="gdBackup()">Backup</button>
+
+  <button onclick="gdRestore()">Restore</button>
+
 </div>
+
 
 <div style="padding:14px;border:1px solid #ccc;border-radius:10px;margin:10px 0">
-  <b>Live Sync (PC + Mobile)</b>
-  <p id="syncStatus" style="font-size:13px;opacity:.7;margin:6px 0">Login nahi hai</p>
-  <button onclick="syncLogin()">Google se Login</button>
-  <button onclick="syncLogout()">Logout</button>
+
+  <b>Live Sync (PC + Mobile)</b>
+
+  <p id="syncStatus" style="font-size:13px;opacity:.7;margin:6px 0">Login nahi hai</p>
+
+  <button onclick="syncLogin()">Google se Login</button>
+
+  <button onclick="syncLogout()">Logout</button>
+
 </div>
 
-
-
-
+renderAll();
+</script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
+
 <script>
+
 /* ============ 1) GOOGLE DRIVE BACKUP / RESTORE ============ */
+
 (function () {
-  const CLIENT_ID = '539060012563-quokfjku8f1m98lekljmvmi6o45ian3e.apps.googleusercontent.com';   // <-- BADLEIN (1)
-  const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
-  const FILE = 'khata-backup.json';
-  const skip = k => k.startsWith('__');
-  const status = t => { const e = document.getElementById('gdStatus'); if (e) e.textContent = t; };
 
-  const last = localStorage.getItem('__gd_last');
-  if (last) status('Aakhri backup: ' + last);
+  const CLIENT_ID = '539060012563-quokfjku8f1m98lekljmvmi6o45ian3e.apps.googleusercontent.com';   // <-- BADLEIN (1)
 
-  function getToken() {
-    return new Promise((res, rej) => {
-      if (!window.google || !google.accounts) return rej(new Error('Google script load nahi hui. Internet check karein.'));
-      google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID, scope: SCOPE,
-        callback: r => r.error ? rej(new Error(r.error)) : res(r.access_token),
-        error_callback: e => rej(new Error(e.type || 'Login band ho gaya'))
-      }).requestAccessToken();
-    });
-  }
+  const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 
-  async function findFile(token) {
-    const q = encodeURIComponent("name='" + FILE + "'");
-    const r = await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&fields=files(id)&q=' + q,
-      { headers: { Authorization: 'Bearer ' + token } });
-    if (!r.ok) throw new Error('Drive error ' + r.status);
-    return (await r.json()).files[0];
-  }
+  const FILE = 'khata-backup.json';
 
-  window.gdBackup = async function () {
-    try {
-      status('Backup ho raha hai...');
-      const token = await getToken();
-      const data = {};
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (!skip(k)) data[k] = localStorage.getItem(k);
-      }
-      const existing = await findFile(token);
-      const meta = existing ? {} : { name: FILE, parents: ['appDataFolder'] };
-      const form = new FormData();
-      form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
-      form.append('file', new Blob([JSON.stringify(data)], { type: 'application/json' }));
-      const url = existing
-        ? 'https://www.googleapis.com/upload/drive/v3/files/' + existing.id + '?uploadType=multipart'
-        : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-      const r = await fetch(url, { method: existing ? 'PATCH' : 'POST', headers: { Authorization: 'Bearer ' + token }, body: form });
-      if (!r.ok) throw new Error('Upload fail ' + r.status);
-      const t = new Date().toLocaleString();
-      localStorage.setItem('__gd_last', t);
-      status('Aakhri backup: ' + t);
-      alert('Backup ho gaya');
-    } catch (e) { status('Backup fail'); alert('Backup fail: ' + e.message); }
-  };
+  const skip = k => k.startsWith('__');
 
-  window.gdRestore = async function () {
-    try {
-      const token = await getToken();
-      const f = await findFile(token);
-      if (!f) return alert('Drive par koi backup nahi mila');
-      if (!confirm('Restore se maujooda data backup wale data se badal jayega. Continue?')) return;
-      const r = await fetch('https://www.googleapis.com/drive/v3/files/' + f.id + '?alt=media', { headers: { Authorization: 'Bearer ' + token } });
-      if (!r.ok) throw new Error('Download fail ' + r.status);
-      const obj = await r.json();
-      Object.keys(obj).forEach(k => localStorage.setItem(k, obj[k]));
-      alert('Restore ho gaya. App reload hogi.');
-      location.reload();
-    } catch (e) { alert('Restore fail: ' + e.message); }
-  };
+  const status = t => { const e = document.getElementById('gdStatus'); if (e) e.textContent = t; };
+
+
+  const last = localStorage.getItem('__gd_last');
+
+  if (last) status('Aakhri backup: ' + last);
+
+
+  function getToken() {
+
+    return new Promise((res, rej) => {
+
+      if (!window.google || !google.accounts) return rej(new Error('Google script load nahi hui. Internet check karein.'));
+
+      google.accounts.oauth2.initTokenClient({
+
+        client_id: CLIENT_ID, scope: SCOPE,
+
+        callback: r => r.error ? rej(new Error(r.error)) : res(r.access_token),
+
+        error_callback: e => rej(new Error(e.type || 'Login band ho gaya'))
+
+      }).requestAccessToken();
+
+    });
+
+  }
+
+
+  async function findFile(token) {
+
+    const q = encodeURIComponent("name='" + FILE + "'");
+
+    const r = await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&fields=files(id)&q=' + q,
+
+      { headers: { Authorization: 'Bearer ' + token } });
+
+    if (!r.ok) throw new Error('Drive error ' + r.status);
+
+    return (await r.json()).files[0];
+
+  }
+
+
+  window.gdBackup = async function () {
+
+    try {
+
+      status('Backup ho raha hai...');
+
+      const token = await getToken();
+
+      const data = {};
+
+      for (let i = 0; i < localStorage.length; i++) {
+
+        const k = localStorage.key(i);
+
+        if (!skip(k)) data[k] = localStorage.getItem(k);
+
+      }
+
+      const existing = await findFile(token);
+
+      const meta = existing ? {} : { name: FILE, parents: ['appDataFolder'] };
+
+      const form = new FormData();
+
+      form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+
+      form.append('file', new Blob([JSON.stringify(data)], { type: 'application/json' }));
+
+      const url = existing
+
+        ? 'https://www.googleapis.com/upload/drive/v3/files/' + existing.id + '?uploadType=multipart'
+
+        : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+
+      const r = await fetch(url, { method: existing ? 'PATCH' : 'POST', headers: { Authorization: 'Bearer ' + token }, body: form });
+
+      if (!r.ok) throw new Error('Upload fail ' + r.status);
+
+      const t = new Date().toLocaleString();
+
+      localStorage.setItem('__gd_last', t);
+
+      status('Aakhri backup: ' + t);
+
+      alert('Backup ho gaya');
+
+    } catch (e) { status('Backup fail'); alert('Backup fail: ' + e.message); }
+
+  };
+
+
+  window.gdRestore = async function () {
+
+    try {
+
+      const token = await getToken();
+
+      const f = await findFile(token);
+
+      if (!f) return alert('Drive par koi backup nahi mila');
+
+      if (!confirm('Restore se maujooda data backup wale data se badal jayega. Continue?')) return;
+
+      const r = await fetch('https://www.googleapis.com/drive/v3/files/' + f.id + '?alt=media', { headers: { Authorization: 'Bearer ' + token } });
+
+      if (!r.ok) throw new Error('Download fail ' + r.status);
+
+      const obj = await r.json();
+
+      Object.keys(obj).forEach(k => localStorage.setItem(k, obj[k]));
+
+      alert('Restore ho gaya. App reload hogi.');
+
+      location.reload();
+
+    } catch (e) { alert('Restore fail: ' + e.message); }
+
+  };
+
 })();
+
 
 /* ============ 2) FIREBASE LIVE SYNC ============ */
+
 (function () {
-  firebase.initializeApp({
-  apiKey: "AIzaSyCT7crNv3baTB58MtLnl4h-KocYEW0M0JY",
-  authDomain: "khat-d682e.firebaseapp.com",
-  projectId: "khat-d682e",
-  storageBucket: "khat-d682e.firebasestorage.app",
-  messagingSenderId: "539060012563",
-  appId: "1:539060012563:web:ec5db5755ff7f9a86761e6",
-  measurementId: "G-600S8Y2K3P"
+
+  firebase.initializeApp({
+
+  apiKey: "AIzaSyCT7crNv3baTB58MtLnl4h-KocYEW0M0JY",
+
+  authDomain: "khat-d682e.firebaseapp.com",
+
+  projectId: "khat-d682e",
+
+  storageBucket: "khat-d682e.firebasestorage.app",
+
+  messagingSenderId: "539060012563",
+
+  appId: "1:539060012563:web:ec5db5755ff7f9a86761e6",
+
+  measurementId: "G-600S8Y2K3P"
+
 });
 
-  const auth = firebase.auth(), db = firebase.firestore();
-  const skip = k => k.startsWith('__');
-  const setStatus = t => { const e = document.getElementById('syncStatus'); if (e) e.textContent = t; };
-  const origSet = Storage.prototype.setItem, origRem = Storage.prototype.removeItem;
-  let applying = false, timer = null, unsub = null;
 
-  const snapshot = () => {
-    const o = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (!skip(k)) o[k] = localStorage.getItem(k);
-    }
-    return o;
-  };
-  const localTs = () => Number(localStorage.getItem('__sync_ts') || 0);
+  const auth = firebase.auth(), db = firebase.firestore();
 
-  function touch(k) {
-    if (applying || skip(k)) return;
-    origSet.call(localStorage, '__sync_ts', String(Date.now()));
-    clearTimeout(timer);
-    timer = setTimeout(push, 1500);
-  }
-  Storage.prototype.setItem = function (k, v) { origSet.call(this, k, v); if (this === localStorage) touch(k); };
-  Storage.prototype.removeItem = function (k) { origRem.call(this, k); if (this === localStorage) touch(k); };
+  const skip = k => k.startsWith('__');
 
-  async function push() {
-    const u = auth.currentUser; if (!u) return;
-    if (!localTs()) origSet.call(localStorage, '__sync_ts', String(Date.now()));
-    try {
-      await db.doc('users/' + u.uid).set({ data: JSON.stringify(snapshot()), ts: localTs() });
-      setStatus('Synced: ' + u.email);
-    } catch (e) { setStatus('Sync error: ' + e.message); }
-  }
+  const setStatus = t => { const e = document.getElementById('syncStatus'); if (e) e.textContent = t; };
 
-  function applyRemote(remote) {
-    const obj = remote.data ? JSON.parse(remote.data) : {};
-    applying = true;
-    Object.keys(snapshot()).forEach(k => { if (!(k in obj)) origRem.call(localStorage, k); });
-    Object.keys(obj).forEach(k => origSet.call(localStorage, k, obj[k]));
-    origSet.call(localStorage, '__sync_ts', String(remote.ts));
-    applying = false;
-    location.reload();
-  }
+  const origSet = Storage.prototype.setItem, origRem = Storage.prototype.removeItem;
 
-  function listen(u) {
-    if (unsub) unsub();
-    unsub = db.doc('users/' + u.uid).onSnapshot(s => {
-      if (s.metadata.hasPendingWrites) return;
-      if (!s.exists) return push();
-      const remote = s.data();
-      if (remote.ts > localTs()) applyRemote(remote);
-      else if (remote.ts < localTs()) push();
-      else setStatus('Synced: ' + u.email);
-    }, e => setStatus('Sync error: ' + e.message));
-  }
+  let applying = false, timer = null, unsub = null;
 
-  auth.onAuthStateChanged(u => {
-    if (u) { setStatus('Connect ho raha hai...'); listen(u); }
-    else { if (unsub) unsub(); setStatus('Login nahi hai'); }
-  });
 
-  window.syncLogin = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => alert('Login fail: ' + e.message));
-  window.syncLogout = () => auth.signOut();
+  const snapshot = () => {
+
+    const o = {};
+
+    for (let i = 0; i < localStorage.length; i++) {
+
+      const k = localStorage.key(i);
+
+      if (!skip(k)) o[k] = localStorage.getItem(k);
+
+    }
+
+    return o;
+
+  };
+
+  const localTs = () => Number(localStorage.getItem('__sync_ts') || 0);
+
+
+  function touch(k) {
+
+    if (applying || skip(k)) return;
+
+    origSet.call(localStorage, '__sync_ts', String(Date.now()));
+
+    clearTimeout(timer);
+
+    timer = setTimeout(push, 1500);
+
+  }
+
+  Storage.prototype.setItem = function (k, v) { origSet.call(this, k, v); if (this === localStorage) touch(k); };
+
+  Storage.prototype.removeItem = function (k) { origRem.call(this, k); if (this === localStorage) touch(k); };
+
+
+  async function push() {
+
+    const u = auth.currentUser; if (!u) return;
+
+    if (!localTs()) origSet.call(localStorage, '__sync_ts', String(Date.now()));
+
+    try {
+
+      await db.doc('users/' + u.uid).set({ data: JSON.stringify(snapshot()), ts: localTs() });
+
+      setStatus('Synced: ' + u.email);
+
+    } catch (e) { setStatus('Sync error: ' + e.message); }
+
+  }
+
+
+  function applyRemote(remote) {
+
+    const obj = remote.data ? JSON.parse(remote.data) : {};
+
+    applying = true;
+
+    Object.keys(snapshot()).forEach(k => { if (!(k in obj)) origRem.call(localStorage, k); });
+
+    Object.keys(obj).forEach(k => origSet.call(localStorage, k, obj[k]));
+
+    origSet.call(localStorage, '__sync_ts', String(remote.ts));
+
+    applying = false;
+
+    location.reload();
+
+  }
+
+
+  function listen(u) {
+
+    if (unsub) unsub();
+
+    unsub = db.doc('users/' + u.uid).onSnapshot(s => {
+
+      if (s.metadata.hasPendingWrites) return;
+
+      if (!s.exists) return push();
+
+      const remote = s.data();
+
+      if (remote.ts > localTs()) applyRemote(remote);
+
+      else if (remote.ts < localTs()) push();
+
+      else setStatus('Synced: ' + u.email);
+
+    }, e => setStatus('Sync error: ' + e.message));
+
+  }
+
+
+  auth.onAuthStateChanged(u => {
+
+    if (u) { setStatus('Connect ho raha hai...'); listen(u); }
+
+    else { if (unsub) unsub(); setStatus('Login nahi hai'); }
+
+  });
+
+
+  window.syncLogin = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => alert('Login fail: ' + e.message));
+
+  window.syncLogout = () => auth.signOut();
+
 })();
-</script>
-renderAll();
+
 </script>
 </body>
 </html>
