@@ -1743,31 +1743,23 @@ function renderSettings(){
     pref.txtTB = el.querySelector('#txtTB').value.trim();
     savePref(); renderAll(); showToast('Custom texts saved.');
   };
+
+  el.insertAdjacentHTML('beforeend', `
+    <div class="card">
+      <h3>Google Drive Backup</h3>
+      <p id="gdStatus" style="font-size:13px;opacity:.7;margin:6px 0">Abhi tak backup nahi liya</p>
+      <button class="btn-primary" onclick="gdBackup()">Backup</button>
+      <button class="btn-primary" onclick="gdRestore()">Restore</button>
+    </div>
+    <div class="card">
+      <h3>Live Sync (PC + Mobile)</h3>
+      <p id="syncStatus" style="font-size:13px;opacity:.7;margin:6px 0">Login nahi hai</p>
+      <button class="btn-primary" onclick="syncLogin()">Google se Login</button>
+      <button class="btn-primary" onclick="syncLogout()">Logout</button>
+    </div>`);
+  const _g=document.getElementById('gdStatus'); if(_g && window.__gdText) _g.textContent=window.__gdText;
+  const _s=document.getElementById('syncStatus'); if(_s && window.__syncText) _s.textContent=window.__syncText;
 }
-<div style="padding:14px;border:1px solid #ccc;border-radius:10px;margin:10px 0">
-
-  <b>Google Drive Backup</b>
-
-  <p id="gdStatus" style="font-size:13px;opacity:.7;margin:6px 0">Abhi tak backup nahi liya</p>
-
-  <button onclick="gdBackup()">Backup</button>
-
-  <button onclick="gdRestore()">Restore</button>
-
-</div>
-
-
-<div style="padding:14px;border:1px solid #ccc;border-radius:10px;margin:10px 0">
-
-  <b>Live Sync (PC + Mobile)</b>
-
-  <p id="syncStatus" style="font-size:13px;opacity:.7;margin:6px 0">Login nahi hai</p>
-
-  <button onclick="syncLogin()">Google se Login</button>
-
-  <button onclick="syncLogout()">Logout</button>
-
-</div>
 
 renderAll();
 </script>
@@ -1794,7 +1786,7 @@ renderAll();
 
   const skip = k => k.startsWith('__');
 
-  const status = t => { const e = document.getElementById('gdStatus'); if (e) e.textContent = t; };
+  const status = t => { window.__gdText = t; const e = document.getElementById('gdStatus'); if (e) e.textContent = t; };
 
 
   const last = localStorage.getItem('__gd_last');
@@ -1945,9 +1937,9 @@ renderAll();
 
   const auth = firebase.auth(), db = firebase.firestore();
 
-  const skip = k => k.startsWith('__');
+  const skip = k => k !== 'khata_v5';  // sirf Khata ka data sync hota hai
 
-  const setStatus = t => { const e = document.getElementById('syncStatus'); if (e) e.textContent = t; };
+  const setStatus = t => { window.__syncText = t; const e = document.getElementById('syncStatus'); if (e) e.textContent = t; };
 
   const origSet = Storage.prototype.setItem, origRem = Storage.prototype.removeItem;
 
