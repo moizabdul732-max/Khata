@@ -2,15 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0f2038">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Khata — Books of Account & Audit Tracker</title>
+<title>Khata - Books of Account & Audit Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<!-- CONFIG: secrets are not stored in this file. Optionally create config.js next to index.html:
+     window.KHATA_CONFIG = { googleClientId:'...', firebase:{ apiKey:'...', authDomain:'...', projectId:'...', storageBucket:'...', messagingSenderId:'...', appId:'...' } };
+     Restrict the API key by domain in Google Cloud Console. Without config.js the app works locally and cloud sync is disabled. -->
+<script src="config.js" onerror="void 0"></script>
 <style>
 :root{
   --navy:#0f2038; --navy2:#16304f; --paper:#f8f6f0; --surface:#ffffff; --surface2:#f1ece1;
@@ -47,7 +51,7 @@ h1,h2,h3{font-family:var(--f-head);font-weight:600}
 .topbar h2{font-size:22px}
 .top-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .ctrl-group{display:flex;align-items:center;gap:6px;background:var(--surface);padding:4px 8px;border:1px solid var(--line);border-radius:6px}
-.ctrl-group label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin:0;font-weight:600}
+.ctrl-group label{font-size:10px;color:var(--muted);text-transform:none;letter-spacing:.3px;margin:0;font-weight:600}
 .ctrl-group select{border:none;background:var(--surface);color:var(--ink)}
 .ctrl-group select option{background:var(--surface);color:var(--ink)}
 select,button,input{font-family:var(--f-ui);font-size:13px;border:1px solid var(--line);background:var(--surface);
@@ -82,7 +86,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .grid.yr{grid-template-columns:1fr auto auto}
 .grid.set{grid-template-columns:1fr 1fr}
 .grid.audit{grid-template-columns:1.5fr 1fr 1fr 1fr auto auto}
-label{font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;font-weight:600}
+label{font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:none;letter-spacing:.3px;font-weight:600}
 select,input{width:100%}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line)}
@@ -90,7 +94,7 @@ th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line)}
 .tb-table tbody tr:not(.unit-row):hover{background:var(--surface2)}
 table tbody tr:not(.unit-row):not(.section-row):hover td{background:var(--surface2)}
 th.year-col{font-size:14px!important;font-weight:700!important;color:var(--gold)!important;letter-spacing:.3px}
-th{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:600}
+th{font-size:10.5px;text-transform:none;letter-spacing:.4px;color:var(--muted);font-weight:600}
 td.num,th.num{text-align:right;font-family:var(--f-num)}
 tfoot td{font-weight:700;border-top:2px solid var(--ink);border-bottom:none;font-family:var(--f-num)}
 tfoot td:first-child{font-family:var(--f-ui)}
@@ -109,7 +113,7 @@ tfoot td:first-child{font-family:var(--f-ui)}
 .report-head .sub{font-size:12px;color:var(--muted);margin-top:2px}
 .unit-note{font-size:11px;color:var(--muted);font-style:italic;margin-top:4px}
 .unit-row td{text-align:center;font-style:italic;color:var(--muted);font-size:11px;background:var(--surface2)!important;font-weight:400!important}
-.section-row td{background:var(--surface2);font-weight:700;padding-top:9px;padding-bottom:7px;color:var(--gold);font-size:12.5px;text-transform:uppercase;letter-spacing:.3px}
+.section-row td{background:var(--surface2);font-weight:700;padding-top:9px;padding-bottom:7px;color:var(--gold);font-size:12.5px;text-transform:none;letter-spacing:.3px}
 .subtotal-row td{font-weight:700;border-top:1px solid var(--line);font-family:var(--f-num)}
 .subtotal-row td:first-child{font-family:var(--f-ui)}
 .code-badge{font-family:var(--f-num);font-size:10.5px;color:var(--gold);background:var(--surface2);padding:1px 6px;border-radius:4px;margin-right:6px}
@@ -118,7 +122,7 @@ tfoot td:first-child{font-family:var(--f-ui)}
 .stat-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
 .stat{background:var(--surface2);border-radius:7px;padding:10px 16px;min-width:130px;border-left:3px solid var(--gold);flex:1;transition:transform .15s ease,box-shadow .15s ease}
 .stat:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.08)}
-.stat .l{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;font-weight:600}
+.stat .l{font-size:10.5px;color:var(--muted);text-transform:none;letter-spacing:.3px;font-weight:600}
 .stat .v{font-family:var(--f-num);font-size:17px;font-weight:600;margin-top:2px}
 .import-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
 .denom-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}
@@ -260,6 +264,18 @@ select.csel-native{position:absolute;opacity:0;pointer-events:none;width:1px;hei
   .card{border:none;padding:0;margin-bottom:26px;page-break-inside:avoid;box-shadow:none}
   .mbar,.mnav,.sheet-overlay,.app-toast,.modal-overlay,#acctOverlay{display:none!important}
 }
+html,body{max-width:100%;overflow-x:hidden}
+.card,.voucher-block{overflow-x:auto;-webkit-overflow-scrolling:touch}
+#singlePrintHolder .logo{display:block;margin:0 auto 6px;max-height:64px;max-width:200px}
+@media screen and (max-width:850px){
+  .card table,.voucher-block table{min-width:560px}
+  button,select,input,.csel-btn{min-height:44px}
+  .mbar button,.mnav button{min-height:0}
+  .rowbtn,.btn-sm,.pill-btn,.mode-btn{min-height:40px;padding-left:12px;padding-right:12px}
+  tbody td,tfoot td{padding-top:12px;padding-bottom:12px}
+  .csel-item{padding:13px 12px;font-size:15px}
+  input[type=checkbox]{width:22px!important;height:22px;min-height:22px}
+}
 </style>
 </head>
 <body>
@@ -325,6 +341,30 @@ select.csel-native{position:absolute;opacity:0;pointer-events:none;width:1px;hei
 const LS_KEY='khata_v5', LS_PREF='khata_pref_v6', LS_DEV='khata_dev_v1';
 const DEV_FIELDS = ['theme','lang','tab','tbView']; // per-device; never synced
 function uid(){ return Math.random().toString(36).slice(2,9); }
+const LS_LOGO='khata_logo_v1'; const getLogo=()=>localStorage.getItem(LS_LOGO)||'';
+let IMP_BAD=[];
+const isLocked=d=>!!(pref.lockDate&&d&&d<=pref.lockDate);
+async function lockBlocked(dates){
+  if(!dates.some(isLocked)) return false;
+  await showAlert('The accounting period is locked up to '+pref.lockDate+'. Vouchers and reconciliation entries dated on or before this date cannot be added, edited, renumbered or deleted.');
+  return true;
+}
+const acode=id=>{ const a=accById(id); return a?acctCode(a):''; };
+function showPreview(title, validText, bad){
+  return new Promise(resolve=>{
+    const ov=document.getElementById('modalOverlay'), n=bad.length;
+    document.getElementById('modalMsg').innerHTML='<b>'+esc(title)+'</b><br>Valid: '+esc(validText)+'<br>Invalid Rows: '+n
+      +(n?'<div class="small" style="max-height:150px;overflow:auto;margin-top:8px">'+bad.slice(0,50).map(esc).join('<br>')+(n>50?'<br>...and '+(n-50)+' more':'')+'</div>':'')
+      +'<br>Only valid rows will be imported. Continue?';
+    document.getElementById('modalBtns').innerHTML='<button class="btn-ghost btn-sm" id="modalCancelBtn">Cancel</button><button class="btn-primary btn-sm" id="modalOkBtn">Import Valid Rows</button>';
+    const close=v=>{ ov.classList.remove('open'); document.removeEventListener('keydown',onKey); resolve(v); };
+    const onKey=e=>{ if(e.key==='Escape') close(false); };
+    document.getElementById('modalOkBtn').onclick=()=>close(true);
+    document.getElementById('modalCancelBtn').onclick=()=>close(false);
+    ov.onclick=e=>{ if(e.target===ov) close(false); };
+    document.addEventListener('keydown',onKey); ov.classList.add('open');
+  });
+}
 
 let state = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
 if(!state || !state.years){
@@ -359,6 +399,7 @@ let defaultPref = {
   amountScale:'1',
   showComparative:true,
   retainedEarningsMode:'split',
+  lockDate:'',
   txtPL:'Profit & Loss Statement',
   txtBS:'Balance Sheet',
   txtCF:'Cash Flow Statement',
@@ -474,7 +515,7 @@ function savePref(){
 }
 
 function fmt(n, raw=false){
-  if(isNaN(n) || n === null) return '—';
+  if(isNaN(n) || n === null) return '-';
   const scale = parseFloat(pref.amountScale || 1);
   n = n / scale;
   const dec = parseInt(pref.decimals !== undefined ? pref.decimals : 2);
@@ -573,8 +614,9 @@ function enhanceSelect(select){
   wrap.appendChild(select);
   select.classList.add('csel-native');
   const btn = document.createElement('button'); btn.type='button'; btn.className='csel-btn';
-  const list = document.createElement('div'); list.className='csel-list';
-  document.body.appendChild(list); // portal: never clipped/hidden by parent overflow or stacking context
+  if(select._cselList) select._cselList.remove();
+  const list = document.createElement('div'); list.className='csel-list'; list._sel=select; select._cselList=list;
+  document.body.appendChild(list); // portal: removed when its select leaves the DOM (see pruneLists)
   const sync = ()=>{
     const opt = select.options[select.selectedIndex];
     btn.innerHTML = `<span>${opt?opt.textContent:''}</span><span class="csel-arrow">▾</span>`;
@@ -611,7 +653,7 @@ window.addEventListener('afterprint', ()=>{ document.title = _origTitle; });
 
 function printSingle(innerHtml){
   const holder = document.getElementById('singlePrintHolder');
-  holder.innerHTML = `<div class="report-head"><div class="co">${pref.companyName||''}</div></div>` + innerHtml;
+  const lg=getLogo(); holder.innerHTML = `<div class="report-head">${lg?`<img class="logo" src="${lg}" alt="">`:''}<div class="co">${esc(pref.companyName||'')}</div></div>` + innerHtml;
   document.body.classList.add('printing-single');
   showToast("Tip: turn off 'Headers and footers' in the print dialog for a clean PDF.");
   setTimeout(()=>{ window.print(); setTimeout(()=>{ document.body.classList.remove('printing-single'); holder.innerHTML=''; }, 300); }, 300);
@@ -670,9 +712,9 @@ function renderShell(){
   if(window.refreshAcctLabels) window.refreshAcctLabels();
   document.getElementById('navlist').innerHTML = TABS.filter(t=>t[0]!=='settings').map(([id, key])=>
     `<button data-t="${id}" class="${pref.tab===id?'active':''}"><span class="dot"></span>${t(key)}</button>`).join('');
-  document.querySelectorAll('.navlist button').forEach(b=>b.onclick=()=>{ pref.tab=b.dataset.t; savePref(); renderAll(); });
+  document.querySelectorAll('.navlist button').forEach(b=>b.onclick=()=>switchTab(b.dataset.t));
   
-  document.getElementById('settingsNavBtn').onclick = ()=>{ pref.tab='settings'; savePref(); renderAll(); };
+  document.getElementById('settingsNavBtn').onclick = ()=>switchTab('settings');
 
   const currentTabObj = TABS.find(t=>t[0]===pref.tab);
   document.getElementById('pageTitle').textContent = currentTabObj ? t(currentTabObj[1]) : '';
@@ -708,6 +750,7 @@ function renderShell(){
 
   document.getElementById('printBtn').textContent = t('exportPdf');
   document.getElementById('printBtn').onclick = ()=>{
+    ['tb','pl','bs','cf','cashbank','audit'].forEach(k=>renderPanel(k));
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('print-show'));
     ['panel-tb','panel-pl','panel-bs','panel-cf','panel-cashbank','panel-audit'].forEach(id=>document.getElementById(id).classList.add('print-show'));
     showToast("Tip: turn off 'Headers and footers' in the print dialog for a clean PDF.");
@@ -729,7 +772,7 @@ const M_ICON = {
   tb:'<svg viewBox="0 0 24 24"><path d="M12 4v16M6 20h12M5 8h14"/><path d="M8 8l-3 6h6zM16 8l-3 6h6z"/></svg>',
   more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>'
 };
-function goTab(id){ pref.tab=id; savePref(); closeMoreSheet(); renderAll(); window.scrollTo(0,0); }
+function goTab(id){ switchTab(id); }
 function closeMoreSheet(){ document.getElementById('moreSheet').classList.remove('open'); }
 function renderMobileChrome(){
   document.getElementById('mBrandName').textContent = pref.showBrandSidebar===false ? 'Khata' : (pref.companyName || 'My Business');
@@ -749,15 +792,17 @@ function renderMobileChrome(){
   sheet.onclick = (e)=>{ if(e.target===sheet) closeMoreSheet(); };
 }
 
-function renderAll(){
-  document.querySelectorAll('.csel-list').forEach(l=>l.remove()); // clean up old portal dropdown lists before re-rendering
-  applyTheme();
-  renderShell();
-  const p = document.getElementById('panels');
-  p.innerHTML = TABS.map(([id])=>`<div class="panel ${pref.tab===id?'active':''}" id="panel-${id}"></div>`).join('');
-  renderMobileChrome();
-  renderYears(); renderAccounts(); renderJournal(); renderLedgers(); renderTB(); renderPL(); renderBS(); renderCF(); renderCashBank(); renderAudit(); renderSettings();
+const RENDERERS={years:renderYears,accounts:renderAccounts,journal:renderJournal,ledgers:renderLedgers,tb:renderTB,pl:renderPL,bs:renderBS,cf:renderCF,cashbank:renderCashBank,audit:renderAudit,settings:renderSettings};
+let DIRTY=new Set(Object.keys(RENDERERS));
+function pruneLists(){ document.querySelectorAll('.csel-list').forEach(l=>{ if(!l._sel||!l._sel.isConnected) l.remove(); }); }
+function ensurePanels(){
+  const p=document.getElementById('panels');
+  if(!p.children.length) p.innerHTML=TABS.map(([id])=>`<div class="panel" id="panel-${id}"></div>`).join('');
+  p.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id==='panel-'+pref.tab));
 }
+function renderPanel(id){ if(RENDERERS[id]&&DIRTY.has(id)){ RENDERERS[id](); DIRTY.delete(id); } pruneLists(); }
+function switchTab(id){ pref.tab=id; savePref(); closeMoreSheet(); _closeAllSel(); renderShell(); renderMobileChrome(); ensurePanels(); renderPanel(id); window.scrollTo(0,0); }
+function renderAll(){ applyTheme(); renderShell(); renderMobileChrome(); ensurePanels(); DIRTY=new Set(Object.keys(RENDERERS)); renderPanel(pref.tab); }
 
 /* ---------------- Years ---------------- */
 function renderYears(){
@@ -768,10 +813,10 @@ function renderYears(){
       <div style="align-self:end"><button class="btn-primary" id="yrSaveBtn">${y?t('save'):t('addYr')}</button></div>
       <div style="align-self:end">${y?`<button class="btn-ghost" id="yrCancelBtn">${t('cancel')}</button>`:''}</div>
     </div><div id="yrErr" class="err"></div>
-    <p class="small" style="margin-top:8px">Years determine opening/closing balances — add in chronological order.</p></div>
+    <p class="small" style="margin-top:8px">Years determine opening/closing balances - add in chronological order.</p></div>
   <div class="card"><h3>Years (${state.years.length})</h3>
   <table><thead><tr><th>Name</th><th>Sequence</th><th></th></tr></thead>
-  <tbody>${state.years.map((yr,i)=>`<tr><td>${yr.name}${state.currentYearId===yr.id?' <span class="tag" style="color:var(--gold);border-color:var(--gold)">active</span>':''}</td>
+  <tbody>${state.years.map((yr,i)=>`<tr><td>${yr.name}${state.currentYearId===yr.id?' <span class="tag" style="color:var(--gold);border-color:var(--gold)">Active</span>':''}</td>
   <td class="small">${i+1}</td><td class="btn-group">
   <button class="rowbtn" data-up="${yr.id}" title="Move earlier" ${i===0?'disabled':''}>↑</button>
   <button class="rowbtn" data-down="${yr.id}" title="Move later" ${i===state.years.length-1?'disabled':''}>↓</button>
@@ -857,21 +902,21 @@ function renderAccounts(){
     const file = el.querySelector('#accCsvFile').files[0];
     const msg = el.querySelector('#accCsvMsg'); msg.textContent='';
     if(!file){ msg.className='msg err'; msg.textContent='Please select a CSV file first.'; return; }
-    Papa.parse(file, { header:true, skipEmptyLines:true, transformHeader:h=>h.trim().toLowerCase(), complete:(res)=>{
+    Papa.parse(file, { header:true, skipEmptyLines:true, transformHeader:h=>h.trim().toLowerCase(), complete:async (res)=>{ const snap=JSON.stringify(state); IMP_BAD=[];
       let added=0, skipped=0;
-      res.data.forEach(row=>{
+      res.data.forEach((row,i)=>{
         const name = (row.name||'').trim();
         const typeRaw = (row.type||'').trim();
         const type = TYPES.find(t=>t.toLowerCase()===typeRaw.toLowerCase());
-        if(!name || !type){ skipped++; return; }
+        if(!name || !type){ skipped++; IMP_BAD.push('Row '+(i+2)+': '+(name?'Invalid account type "'+typeRaw+'"':'Missing account name')); return; }
         const isCashRaw = String(row.iscash||'').trim().toLowerCase();
         const isCash = ['1','y','yes','true'].includes(isCashRaw);
         const cfRaw = (row.cf || row.cfcategory || '').trim();
         const cf = CF_CATS.find(c=>c.toLowerCase()===cfRaw.toLowerCase()) || 'Operating';
-        if(upsertAccount({ name, type, isCash, cf: isCash?null:cf }, ()=>{})){ added++; } else { skipped++; }
+        if(upsertAccount({ name, type, isCash, cf: isCash?null:cf }, ()=>{})){ added++; } else { skipped++; IMP_BAD.push('Row '+(i+2)+': Duplicate account "'+name+'"'); }
       });
-      save(); renderAll();
-      msg.className='msg ok'; msg.textContent=`Import finished: ${added} added, ${skipped} skipped/duplicate.`;
+      if(!(await showPreview('Import Preview',added+' account(s)',IMP_BAD))){ state=JSON.parse(snap); msg.className='msg err'; msg.textContent='Import cancelled. No changes were made.'; return; }
+      save(); renderAll(); msg.className='msg ok'; msg.textContent=`Import finished: ${added} added, ${skipped} skipped/duplicate.`;
     }});
   };
 
@@ -879,7 +924,7 @@ function renderAccounts(){
   if(!state.accounts.length){ wrap.innerHTML=`<p class="empty">${t('noAcc')}</p>`; return; }
   wrap.innerHTML = `<table><thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Cash?</th><th>CF Cat.</th><th class="num">Balance ${getHeaderUnitNote()}</th><th></th></tr></thead>
   <tbody>${state.accounts.map(ac=>{ const b=balanceFor(ac, selIdx());
-    return `<tr><td><span class="code-badge">${acctCode(ac)}</span></td><td>${ac.name}</td><td><span class="tag ${ac.type}">${ac.type}</span></td><td>${ac.isCash?'Yes':'—'}</td><td>${ac.isCash?'—':ac.cf}</td>
+    return `<tr><td><span class="code-badge">${acctCode(ac)}</span></td><td>${ac.name}</td><td><span class="tag ${ac.type}">${ac.type}</span></td><td>${ac.isCash?'Yes':'-'}</td><td>${ac.isCash?'-':ac.cf}</td>
     <td class="num">${fmt(b.net)}</td><td class="btn-group"><button class="rowbtn" data-e="${ac.id}" title="Edit">${t('edit')}</button>
     <button class="rowbtn danger" data-d="${ac.id}" title="Delete">${t('delete')}</button></td></tr>`; }).join('')}</tbody></table>`;
   wrap.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{ editAcc=accById(b.dataset.e); renderAll(); scrollToPanelTop('panel-accounts'); });
@@ -933,7 +978,7 @@ function renderJournal(){
     <div id="jeCsvMsg" class="msg"></div>
   </div>
   <div class="card">
-    <h3>Vouchers — ${vouchersForYear(idx).length} in this year</h3>
+    <h3>Vouchers - ${vouchersForYear(idx).length} in this year</h3>
     <div class="searchbar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <input id="jeSearch" placeholder="Search voucher # or narration..." value="${jeFilter}">
       <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted);text-transform:none;font-weight:400"><input type="checkbox" id="selAllChk" style="width:auto"> Select all</label>
@@ -948,8 +993,8 @@ function renderJournal(){
     const renderLines = ()=>{
       const w = el.querySelector('#draftLinesWrap');
       if(!draft.lines.length){ w.innerHTML='<p class="empty">No lines added yet. Minimum 2 lines required.</p>'; }
-      else { w.innerHTML = `<table><thead><tr><th>Account</th><th class="num">Debit ${getHeaderUnitNote()}</th><th class="num">Credit ${getHeaderUnitNote()}</th><th></th></tr></thead>
-        <tbody>${draft.lines.map((l,i)=>`<tr><td>${accById(l.accId)?.name||'—'}${auditTagBadge(l)}</td><td class="num">${l.dr?fmt(l.dr):''}</td>
+      else { w.innerHTML = `<table><thead><tr><th>Account Code</th><th>Account Name</th><th class="num">Debit ${getHeaderUnitNote()}</th><th class="num">Credit ${getHeaderUnitNote()}</th><th></th></tr></thead>
+        <tbody>${draft.lines.map((l,i)=>`<tr><td><span class="code-badge">${acode(l.accId)}</span></td><td>${accById(l.accId)?.name||'-'}${auditTagBadge(l)}</td><td class="num">${l.dr?fmt(l.dr):''}</td>
         <td class="num">${l.cr?fmt(l.cr):''}</td><td><button class="rowbtn danger" data-i="${i}">Remove</button></td></tr>`).join('')}</tbody></table>`;
         w.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ draft.lines.splice(parseInt(b.dataset.i),1); renderLines(); renderTotals(); }); }
     };
@@ -973,10 +1018,11 @@ function renderJournal(){
       draft.lines.push({accId, dr: side==='dr'?amt:0, cr: side==='cr'?amt:0, auditClientId, auditRole});
       el.querySelector('#lnAmt').value=''; renderLines(); renderTotals();
     };
-    el.querySelector('#postVBtn').onclick = ()=>{
+    el.querySelector('#postVBtn').onclick = async ()=>{
       draft.date = el.querySelector('#vDate').value; draft.narration = el.querySelector('#vNar').value;
       const err = m=>el.querySelector('#vErr').textContent=m; err('');
       if(!draft.date){ err('Date required.'); return; }
+      if(await lockBlocked([draft.date, ...(editingVoucher?state.entries.filter(e=>e.voucher===editingVoucher).map(e=>e.date):[])])) return;
       if(draft.lines.length<2){ err('At least 2 lines required.'); return; }
       const totDr = draft.lines.reduce((s,l)=>s+l.dr,0), totCr = draft.lines.reduce((s,l)=>s+l.cr,0);
       if(Math.abs(totDr-totCr)>0.005){ err('Unbalanced voucher: Total Debit must equal Total Credit.'); return; }
@@ -990,8 +1036,8 @@ function renderJournal(){
 
   el.querySelector('#exportJeBtn').onclick = ()=>{
     const curEntries = entriesIn(idx);
-    const rows = [['Year','Date','Voucher','Account','Debit','Credit','Narration'],
-      ...curEntries.map(e=>[state.years[idx]?.name||'', e.date, e.voucher, accById(e.accId)?.name||'', e.dr||'', e.cr||'', e.narration||''])];
+    const rows = [['Year','Date','Voucher','Account Code','Account Name','Debit','Credit','Narration'],
+      ...curEntries.map(e=>[state.years[idx]?.name||'', e.date, e.voucher, acode(e.accId), accById(e.accId)?.name||'', e.dr||'', e.cr||'', e.narration||''])];
     downloadCSV(rows, `journal_entries_${state.years[idx]?.name||'export'}.csv`);
   };
 
@@ -999,9 +1045,9 @@ function renderJournal(){
     const file = el.querySelector('#jeCsvFile').files[0];
     const msg = el.querySelector('#jeCsvMsg'); msg.textContent='';
     if(!file){ msg.className='msg err'; msg.textContent='Please select a CSV file first.'; return; }
-    Papa.parse(file, { header:true, skipEmptyLines:true, transformHeader:h=>h.trim().toLowerCase(), complete:(res)=>{
+    Papa.parse(file, { header:true, skipEmptyLines:true, transformHeader:h=>h.trim().toLowerCase(), complete:async (res)=>{ const snap=JSON.stringify(state); IMP_BAD=[];
       const groups = new Map();
-      res.data.forEach(row=>{
+      res.data.forEach((row,i)=>{
         const yr = (row.year||'').trim();
         const vRaw = (row.voucher||'').trim();
         const dt = (row.date||'').trim();
@@ -1014,22 +1060,22 @@ function renderJournal(){
       groups.forEach(g=>{
         let yObj = g.yr ? state.years.find(y=>y.name.toLowerCase()===g.yr.toLowerCase()) : state.years.find(y=>y.id===state.currentYearId);
         if(g.yr && !yObj){ yObj={id:uid(),name:g.yr}; state.years.push(yObj); }
-        let ok=true, legs=[], sd=0, sc=0;
+        let ok=true, legs=[], sd=0, sc=0, why='';
         g.rows.forEach(row=>{
-          const accName = (row.account||'').trim();
+          const accName = (row.account||row.accountname||row['account name']||'').trim();
           const acc = state.accounts.find(a=>a.name.toLowerCase()===accName.toLowerCase());
           const d = parseFloat(row.debit || row.dr) || 0;
           const c = parseFloat(row.credit || row.cr) || 0;
-          if(!acc || (!d && !c) || !g.date){ ok=false; return; }
+          if(!acc || (!d && !c) || !g.date || isLocked(g.date)){ ok=false; why=!acc?'Unknown account "'+accName+'"':(!g.date?'Missing date':(isLocked(g.date)?'Date is in the locked period':'Missing amount')); return; }
           legs.push({accId:acc.id, dr:d, cr:c}); sd+=d; sc+=c;
         });
-        if(!ok || !yObj || legs.length<1 || Math.abs(sd-sc)>0.005){ skipped += g.rows.length; return; }
+        if(!ok || !yObj || legs.length<1 || Math.abs(sd-sc)>0.005){ skipped += g.rows.length; IMP_BAD.push((g.vRaw||'Voucher')+': '+(why||(Math.abs(sd-sc)>0.005?'Unbalanced debits/credits ('+sd.toFixed(2)+' vs '+sc.toFixed(2)+')':'Invalid data'))); return; }
         const voucher = g.vRaw || uid();
         legs.forEach(l=> state.entries.push({id:uid(), yearId:yObj.id, date:g.date, voucher, accId:l.accId, dr:l.dr, cr:l.cr, narration:g.narration}));
         addedV++; addedL+=legs.length;
       });
-      save(); renderAll();
-      msg.className='msg ok'; msg.textContent=`Import finished: ${addedV} voucher(s) / ${addedL} line(s) imported.`;
+      if(!(await showPreview('Import Preview',addedV+' voucher(s) / '+addedL+' line(s)',IMP_BAD))){ state=JSON.parse(snap); msg.className='msg err'; msg.textContent='Import cancelled. No changes were made.'; return; }
+      save(); renderAll(); msg.className='msg ok'; msg.textContent=`Import finished: ${addedV} voucher(s) / ${addedL} line(s) imported.`;
     }});
   };
 
@@ -1043,6 +1089,7 @@ function renderJournal(){
   el.querySelector('#renumberBtn').onclick = async ()=>{
     const vList = vouchersForYear(idx);
     if(!vList.length) return;
+    if(await lockBlocked(vList.map(v=>v.date))) return;
     if(!(await showConfirm(`Renumber all ${vList.length} voucher(s) in this year to start from JV-0001 (in date order)?`))) return;
     const sorted = [...vList].sort((a,b)=> a.date.localeCompare(b.date) || a.voucher.localeCompare(b.voucher));
     const map = new Map();
@@ -1053,12 +1100,14 @@ function renderJournal(){
   el.querySelector('#clearYearBtn').onclick = async ()=>{
     const list = vouchersForYear(idx);
     if(!list.length) return;
+    if(await lockBlocked(list.map(v=>v.date))) return;
     if(!(await showConfirm('Are you sure you want to clear all entries in this year?'))) return;
     state.entries = state.entries.filter(e=>yearIdx(e.yearId)!==idx);
     selectedVouchers.clear(); save(); renderAll();
   };
   el.querySelector('#bulkDeleteBtn').onclick = async ()=>{
     if(!selectedVouchers.size) return;
+    if(await lockBlocked(state.entries.filter(e=>selectedVouchers.has(e.voucher)).map(e=>e.date))) return;
     if(!(await showConfirm('Delete selected vouchers?'))) return;
     state.entries = state.entries.filter(e=>!selectedVouchers.has(e.voucher));
     selectedVouchers.clear(); save(); renderAll();
@@ -1084,27 +1133,27 @@ function renderVoucherList(el, idx){
     const totDr = v.legs.reduce((s,l)=>s+l.dr,0);
     return `<div class="voucher-block"><div class="vhead"><span style="display:flex;align-items:center;gap:8px">
     <input type="checkbox" class="vchk" data-v="${v.voucher}" style="width:auto" ${selectedVouchers.has(v.voucher)?'checked':''}>
-    <span class="vid">${v.voucher}</span> · ${v.date} ${v.narration?'— '+v.narration:''}</span>
+    <span class="vid">${v.voucher}</span> · ${v.date} ${v.narration?'- '+v.narration:''}</span>
     <span class="btn-group"><button class="rowbtn" data-pdf="${v.voucher}">PDF</button><button class="rowbtn" data-xls="${v.voucher}">Excel</button><button class="rowbtn" data-e="${v.voucher}" title="Edit">${t('edit')}</button><button class="rowbtn danger" data-d="${v.voucher}" title="Delete">${t('delete')}</button></span></div>
     <table>
-      <thead><tr><th>Account</th><th class="num">Debit ${getHeaderUnitNote()}</th><th class="num">Credit ${getHeaderUnitNote()}</th></tr></thead>
-      <tbody>${v.legs.map(l=>`<tr><td>${accById(l.accId)?.name||'—'}${auditTagBadge(l)}</td><td class="num">${l.dr?fmt(l.dr):''}</td><td class="num">${l.cr?fmt(l.cr):''}</td></tr>`).join('')}</tbody>
-      <tfoot><tr><td>${t('total')}</td><td class="num">${fmt(totDr)}</td><td class="num">${fmt(totDr)}</td></tr></tfoot>
+      <thead><tr><th>Account Code</th><th>Account Name</th><th class="num">Debit ${getHeaderUnitNote()}</th><th class="num">Credit ${getHeaderUnitNote()}</th></tr></thead>
+      <tbody>${v.legs.map(l=>`<tr><td><span class="code-badge">${acode(l.accId)}</span></td><td>${accById(l.accId)?.name||'-'}${auditTagBadge(l)}</td><td class="num">${l.dr?fmt(l.dr):''}</td><td class="num">${l.cr?fmt(l.cr):''}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="2">${t('total')}</td><td class="num">${fmt(totDr)}</td><td class="num">${fmt(totDr)}</td></tr></tfoot>
     </table></div>`;
   }).join('');
   wrap.querySelectorAll('[data-pdf]').forEach(b=>b.onclick=()=>{
     const v = list.find(x=>x.voucher===b.dataset.pdf);
     const totDr = v.legs.reduce((s,l)=>s+l.dr,0);
-    const html = `<div class="report-head"><div class="title">Journal Voucher ${v.voucher}</div><div class="sub">${v.date}${v.narration?' — '+v.narration:''}</div></div>
-    <table><thead><tr><th>Account</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead>
-    <tbody>${v.legs.map(l=>`<tr><td>${accById(l.accId)?.name||'—'}</td><td class="num">${l.dr?fmt(l.dr):''}</td><td class="num">${l.cr?fmt(l.cr):''}</td></tr>`).join('')}</tbody>
-    <tfoot><tr><td>Total</td><td class="num">${fmt(totDr)}</td><td class="num">${fmt(totDr)}</td></tr></tfoot></table>`;
+    const html = `<div class="report-head"><div class="title">Journal Voucher ${v.voucher}</div><div class="sub">${v.date}${v.narration?' - '+v.narration:''}</div></div>
+    <table><thead><tr><th>Account Code</th><th>Account Name</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead>
+    <tbody>${v.legs.map(l=>`<tr><td>${acode(l.accId)}</td><td>${accById(l.accId)?.name||'-'}</td><td class="num">${l.dr?fmt(l.dr):''}</td><td class="num">${l.cr?fmt(l.cr):''}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="2">Total</td><td class="num">${fmt(totDr)}</td><td class="num">${fmt(totDr)}</td></tr></tfoot></table>`;
     printSingle(html);
   });
   wrap.querySelectorAll('[data-xls]').forEach(b=>b.onclick=()=>{
     const v = list.find(x=>x.voucher===b.dataset.xls);
-    const out = [['Voucher',v.voucher],['Date',v.date],['Narration',v.narration||''],[],['Account','Debit','Credit'],
-      ...v.legs.map(l=>[accById(l.accId)?.name||'—', l.dr?l.dr.toFixed(2):'', l.cr?l.cr.toFixed(2):''])];
+    const out = [['Voucher',v.voucher],['Date',v.date],['Narration',v.narration||''],[],['Account Code','Account Name','Debit','Credit'],
+      ...v.legs.map(l=>[acode(l.accId), accById(l.accId)?.name||'-', l.dr?l.dr.toFixed(2):'', l.cr?l.cr.toFixed(2):''])];
     downloadCSV(out, `voucher_${v.voucher}.csv`);
   });
   wrap.querySelectorAll('.vchk').forEach(c=>c.onchange=()=>{
@@ -1113,12 +1162,14 @@ function renderVoucherList(el, idx){
     if(bulkBtn) bulkBtn.disabled = selectedVouchers.size===0;
     if(selAllChk) selAllChk.checked = list.length>0 && list.every(v=>selectedVouchers.has(v.voucher));
   });
-  wrap.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{
+  wrap.querySelectorAll('[data-e]').forEach(b=>b.onclick=async ()=>{
     const v = state.entries.filter(e=>e.voucher===b.dataset.e);
+    if(await lockBlocked(v.map(x=>x.date))) return;
     editingVoucher = b.dataset.e; draft = { date:v[0].date, narration:v[0].narration, lines: v.map(l=>({accId:l.accId,dr:l.dr,cr:l.cr,auditClientId:l.auditClientId||null,auditRole:l.auditRole||null})) };
     renderAll(); scrollToPanelTop('panel-journal');
   });
   wrap.querySelectorAll('[data-d]').forEach(b=>b.onclick=async ()=>{
+    if(await lockBlocked(state.entries.filter(e=>e.voucher===b.dataset.d).map(e=>e.date))) return;
     if(!(await showConfirm('Delete this voucher?'))) return;
     state.entries = state.entries.filter(e=>e.voucher!==b.dataset.d); selectedVouchers.delete(b.dataset.d); save(); renderAll();
   });
@@ -1127,8 +1178,8 @@ function renderVoucherList(el, idx){
 /* ---------------- Ledgers ---------------- */
 function counterparties(leg){
   const others = state.entries.filter(e=>e.voucher===leg.voucher && e.id!==leg.id);
-  if(!others.length) return '—';
-  if(others.length<=2) return others.map(o=>accById(o.accId)?.name||'—').join(', ');
+  if(!others.length) return '-';
+  if(others.length<=2) return others.map(o=>accById(o.accId)?.name||'-').join(', ');
   return 'Multiple ('+others.length+')';
 }
 let ledgerFilter='';
@@ -1137,7 +1188,7 @@ function ledgerCardData(a, idx){
   const opening = isPL(a) ? 0 : (idx>0 ? calcBalance(a, entriesUpTo(idx-1)).net : 0);
   let running = opening;
   const dataRows = rows.map(e=>{ const delta = normalIsDebit(a.type) ? (e.dr-e.cr) : (e.cr-e.dr); running += delta;
-    return {date:e.date, against:counterparties(e), dr:e.dr, cr:e.cr, bal:running}; });
+    return {date:e.date, voucher:e.voucher, narration:e.narration||'', against:counterparties(e), dr:e.dr, cr:e.cr, bal:running}; });
   const closing = balanceFor(a, idx).net;
   return {rows:dataRows, opening, closing};
 }
@@ -1162,9 +1213,9 @@ function renderLedgerCards(idx){
   const cards = list.map(a=>{
     const {rows, opening, closing} = ledgerCardData(a, idx);
     if(!rows.length && opening===0) return '';
-    const tableHtml = `<table><thead><tr><th>Date</th><th>Against</th><th class="num">${t('dr')}</th><th class="num">${t('cr')}</th><th class="num">${t('balance')}</th></tr></thead>
-    <tbody>${!isPL(a) ? `<tr><td colspan="4">Balance brought forward</td><td class="num">${fmt(opening)}</td></tr>`:''}
-    ${rows.map(r=>`<tr><td>${r.date}</td><td>${r.against}</td><td class="num">${r.dr?fmt(r.dr):''}</td><td class="num">${r.cr?fmt(r.cr):''}</td><td class="num">${fmt(r.bal)}</td></tr>`).join('')}</tbody></table>`;
+    const tableHtml = `<table><thead><tr><th>Date</th><th>Voucher #</th><th>Against Account</th><th>Narration</th><th class="num">${t('dr')}</th><th class="num">${t('cr')}</th><th class="num">Running Balance</th></tr></thead>
+    <tbody>${!isPL(a) ? `<tr><td colspan="6">Balance Brought Forward</td><td class="num">${fmt(opening)}</td></tr>`:''}
+    ${rows.map(r=>`<tr><td>${r.date}</td><td>${r.voucher}</td><td>${r.against}</td><td>${esc(r.narration)}</td><td class="num">${r.dr?fmt(r.dr):''}</td><td class="num">${r.cr?fmt(r.cr):''}</td><td class="num">${fmt(r.bal)}</td></tr>`).join('')}</tbody></table>`;
     return `<div class="card"><h3><span><span class="code-badge">${acctCode(a)}</span>${a.name} <span class="tag ${a.type}">${a.type} · Closing ${fmt(closing)}</span></span>
     <span class="controls no-print"><button class="rowbtn" data-pdf="${a.id}">PDF</button><button class="rowbtn" data-xls="${a.id}">Excel</button></span></h3>
     ${tableHtml}</div>`;
@@ -1172,19 +1223,19 @@ function renderLedgerCards(idx){
   wrap.innerHTML = cards || `<div class="card"><p class="empty">${t('noEntries')}</p></div>`;
   wrap.querySelectorAll('[data-pdf]').forEach(b=>b.onclick=()=>{
     const a = accById(b.dataset.pdf); const idxN = selIdx(); const {rows, opening, closing} = ledgerCardData(a, idxN);
-    const html = `<div class="report-head"><div class="title">${acctCode(a)} · ${a.name}</div><div class="sub">${a.type} — ${shortYear(state.years[idxN]?.name)||''}</div></div>
-    <table><thead><tr><th>Date</th><th>Against</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Balance</th></tr></thead>
-    <tbody>${!isPL(a) ? `<tr><td colspan="4">Balance brought forward</td><td class="num">${fmt(opening)}</td></tr>`:''}
-    ${rows.map(r=>`<tr><td>${r.date}</td><td>${r.against}</td><td class="num">${r.dr?fmt(r.dr):''}</td><td class="num">${r.cr?fmt(r.cr):''}</td><td class="num">${fmt(r.bal)}</td></tr>`).join('')}</tbody>
-    <tfoot><tr><td colspan="4">Closing Balance</td><td class="num">${fmt(closing)}</td></tr></tfoot></table>`;
+    const html = `<div class="report-head"><div class="title">${acctCode(a)} · ${a.name}</div><div class="sub">${a.type} - ${shortYear(state.years[idxN]?.name)||''}</div></div>
+    <table><thead><tr><th>Date</th><th>Voucher #</th><th>Against Account</th><th>Narration</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Running Balance</th></tr></thead>
+    <tbody>${!isPL(a) ? `<tr><td colspan="6">Balance Brought Forward</td><td class="num">${fmt(opening)}</td></tr>`:''}
+    ${rows.map(r=>`<tr><td>${r.date}</td><td>${r.voucher}</td><td>${r.against}</td><td>${esc(r.narration)}</td><td class="num">${r.dr?fmt(r.dr):''}</td><td class="num">${r.cr?fmt(r.cr):''}</td><td class="num">${fmt(r.bal)}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="6">Closing Balance</td><td class="num">${fmt(closing)}</td></tr></tfoot></table>`;
     printSingle(html);
   });
   wrap.querySelectorAll('[data-xls]').forEach(b=>b.onclick=()=>{
     const a = accById(b.dataset.xls); const idxN = selIdx(); const {rows, opening, closing} = ledgerCardData(a, idxN);
-    const out = [['Date','Against','Debit','Credit','Balance']];
-    if(!isPL(a)) out.push(['','Balance brought forward','','',opening.toFixed(2)]);
-    rows.forEach(r=>out.push([r.date, r.against, r.dr?r.dr.toFixed(2):'', r.cr?r.cr.toFixed(2):'', r.bal.toFixed(2)]));
-    out.push(['','Closing Balance','','',closing.toFixed(2)]);
+    const out = [['Date','Voucher Number','Against Account','Narration','Debit','Credit','Balance']];
+    if(!isPL(a)) out.push(['','','Balance Brought Forward','','','',opening.toFixed(2)]);
+    rows.forEach(r=>out.push([r.date, r.voucher, r.against, r.narration, r.dr?r.dr.toFixed(2):'', r.cr?r.cr.toFixed(2):'', r.bal.toFixed(2)]));
+    out.push(['','','Closing Balance','','','',closing.toFixed(2)]);
     downloadCSV(out, `ledger_${acctCode(a)}_${a.name.replace(/[^a-z0-9]+/gi,'_')}.csv`);
   });
 }
@@ -1253,7 +1304,7 @@ function renderTB(){
       </div>
     </div>
     ${tableBody}
-    <p class="${balanced?'ok':'err'}" style="margin-top:10px">${balanced?'Balanced — Dr = Cr':'Not balanced — check entries.'}</p>
+    <p class="${balanced?'ok':'err'}" style="margin-top:10px">${balanced?'Balanced - Dr = Cr':'Not balanced - check entries.'}</p>
   </div>`;
 
   el.querySelector('#tb2ViewBtn').onclick = ()=>{ pref.tbView='2col'; savePref(); renderTB(); };
@@ -1376,9 +1427,9 @@ function renderBS(){
   const yearHead = `<th class="num year-col">${shortYear(state.years[idx]?.name)||'Current'}</th>${showComp?`<th class="num year-col">${shortYear(state.years[idx-1]?.name)}</th>`:''}`;
 
   const eqRows = !isSplitRE ?
-      `<tr><td>Retained Earnings (Accumulated)</td><td class="num">${fmt(broughtForward + net)}</td>${showComp?`<td class="num">${fmt(prevBroughtForward + prevNet)}</td>`:''}</tr>`
-    : `${Math.abs(broughtForward)>0.005 || (showComp && Math.abs(prevBroughtForward)>0.005) ? `<tr><td>Retained Earnings — Brought Forward</td><td class="num">${fmt(broughtForward)}</td>${showComp?`<td class="num">${fmt(prevBroughtForward)}</td>`:''}</tr>`:''}
-       ${Math.abs(net)>0.005 || (showComp && Math.abs(prevNet)>0.005) ? `<tr><td>Net Profit / (Loss) — Current Year</td><td class="num">${fmt(net)}</td>${showComp?`<td class="num">${fmt(prevNet)}</td>`:''}</tr>`:''}`;
+      `<tr><td>Total Accumulated Retained Earnings</td><td class="num">${fmt(broughtForward + net)}</td>${showComp?`<td class="num">${fmt(prevBroughtForward + prevNet)}</td>`:''}</tr>`
+    : `${Math.abs(broughtForward)>0.005 || (showComp && Math.abs(prevBroughtForward)>0.005) ? `<tr><td>Retained Earnings - Brought Forward</td><td class="num">${fmt(broughtForward)}</td>${showComp?`<td class="num">${fmt(prevBroughtForward)}</td>`:''}</tr>`:''}
+       ${Math.abs(net)>0.005 || (showComp && Math.abs(prevNet)>0.005) ? `<tr><td>Net Profit / (Loss) - Current Year</td><td class="num">${fmt(net)}</td>${showComp?`<td class="num">${fmt(prevNet)}</td>`:''}</tr>`:''}`;
 
   const tableBody = `
     <table>
@@ -1398,7 +1449,7 @@ function renderBS(){
       </tbody>
       <tfoot><tr><td>Liabilities + Equity</td><td class="num">${fmt(totL+totE)}</td>${showComp?`<td class="num">${fmt(prevTotL+prevTotE)}</td>`:''}</tr></tfoot>
     </table>
-    <p class="${Math.abs(diff)<0.005?'ok':'err'}" style="margin-top:10px">${Math.abs(diff)<0.005?'Balance Sheet balances':'Difference: '+fmt(diff)+' — check account types/entries.'}</p>`;
+    <p class="${Math.abs(diff)<0.005?'ok':'err'}" style="margin-top:10px">${Math.abs(diff)<0.005?'Balance Sheet balances':'Difference: '+fmt(diff)+' - check account types/entries.'}</p>`;
 
   el.innerHTML = `<div class="card">
     <div class="report-head">
@@ -1421,6 +1472,7 @@ function renderBS(){
       [pref.txtLiab||'Liabilities'], ...liabs.map(x=>[x.a.name, x.v.toFixed(2), ...(showComp?[x.pv.toFixed(2)]:[])]),
       [`Total ${pref.txtLiab||'Liabilities'}`, totL.toFixed(2), ...(showComp?[prevTotL.toFixed(2)]:[])],
       [pref.txtEq||'Equity'], ...eq.map(x=>[x.a.name, x.v.toFixed(2), ...(showComp?[x.pv.toFixed(2)]:[])]),
+      ...(isSplitRE ? [['Retained Earnings - Brought Forward', broughtForward.toFixed(2), ...(showComp?[prevBroughtForward.toFixed(2)]:[])],['Net Profit / (Loss) - Current Year', net.toFixed(2), ...(showComp?[prevNet.toFixed(2)]:[])]] : [['Total Accumulated Retained Earnings', (broughtForward+net).toFixed(2), ...(showComp?[(prevBroughtForward+prevNet).toFixed(2)]:[])]]),
       [`Total ${pref.txtEq||'Equity'}`, totE.toFixed(2), ...(showComp?[prevTotE.toFixed(2)]:[])]];
     downloadCSV(rows, `balance_sheet_${state.years[idx]?.name||''}.csv`);
   };
@@ -1468,8 +1520,8 @@ function renderCF(){
         ${lines.filter(l=>l.cat==='Financing').length?lines.filter(l=>l.cat==='Financing').map(l=>`<tr><td>${l.name}</td><td class="num">${fmt(l.cashEffect)}</td></tr>`).join(''):'<tr><td class="empty" colspan="2">None</td></tr>'}
         <tr class="subtotal-row"><td>Net Cash from Financing</td><td class="num">${fmt(buckets.Financing)}</td></tr>
         <tr class="section-row"><td colspan="2">Reconciliation</td></tr>
-        <tr><td>Cash &amp; Bank — opening</td><td class="num">${fmt(openCash)}</td></tr>
-        <tr><td>Cash &amp; Bank — closing (per ledger)</td><td class="num">${fmt(closeCash)}</td></tr>
+        <tr><td>Cash &amp; Bank - opening</td><td class="num">${fmt(openCash)}</td></tr>
+        <tr><td>Cash &amp; Bank - closing (per ledger)</td><td class="num">${fmt(closeCash)}</td></tr>
       </tbody>
       <tfoot><tr><td>Net movement per Cash Flow Statement</td><td class="num">${fmt(totalCF)}</td></tr></tfoot>
     </table>`;
@@ -1478,13 +1530,13 @@ function renderCF(){
     <div class="report-head">
       <div class="co">${pref.companyName||''}</div>
       <div class="title">${pref.txtCF || 'Cash Flow Statement'}</div>
-      <div class="sub">Indirect method — for ${shortYear(state.years[idx]?.name)||''}</div>
+      <div class="sub">Indirect method - for ${shortYear(state.years[idx]?.name)||''}</div>
     </div>
     <div class="controls no-print" style="justify-content:flex-end;margin-bottom:10px">
       <button class="btn-ghost btn-sm" id="cfPdfBtn">Download PDF</button>
       <button class="btn-ghost btn-sm" id="cfXlsBtn">Download Excel</button>
     </div>
-    ${!cashAccs.length?'<p class="err">No account tagged as "Cash/Bank" — flag cash accounts in Chart of Accounts.</p>':''}
+    ${!cashAccs.length?'<p class="err">No account tagged as "Cash/Bank" - flag cash accounts in Chart of Accounts.</p>':''}
     <div class="stat-row">
       <div class="stat"><div class="l">Operating</div><div class="v">${fmt(buckets.Operating)}</div></div>
       <div class="stat"><div class="l">Investing</div><div class="v">${fmt(buckets.Investing)}</div></div>
@@ -1494,7 +1546,7 @@ function renderCF(){
     ${tableBody}
   </div>`;
 
-  el.querySelector('#cfPdfBtn').onclick = ()=> printSingle(`<div class="report-head"><div class="title">${pref.txtCF||'Cash Flow Statement'}</div><div class="sub">Indirect method — for ${shortYear(state.years[idx]?.name)||''}</div></div>${tableBody}`);
+  el.querySelector('#cfPdfBtn').onclick = ()=> printSingle(`<div class="report-head"><div class="title">${pref.txtCF||'Cash Flow Statement'}</div><div class="sub">Indirect method - for ${shortYear(state.years[idx]?.name)||''}</div></div>${tableBody}`);
   el.querySelector('#cfXlsBtn').onclick = ()=>{
     const rows = [['Particulars', shortYear(state.years[idx]?.name)||'Current'],
       ['Operating Activities'], ['Net Profit / (Loss) for the year', netProfit.toFixed(2)],
@@ -1522,7 +1574,7 @@ function renderCashBank(){
       <div class="report-head">
         <div class="co">${pref.companyName||''}</div>
         <div class="title">Cash &amp; Bank Reconciliation</div>
-        <div class="sub">Real vs Books, per Cash/Bank account — ${shortYear(state.years[idx]?.name)||''}</div>
+        <div class="sub">Real vs Books, per Cash/Bank account - ${shortYear(state.years[idx]?.name)||''}</div>
       </div>
     </div>
     <div class="card">
@@ -1536,7 +1588,7 @@ function renderCashBank(){
         <div><label>Writeoff</label><input type="number" step="0.01" id="cbWriteoff" placeholder="Adjustment (optional)" value="${edit?edit.writeoff||'':''}"></div>
         <div style="align-self:end"><button class="btn-primary" id="cbSaveBtn" style="width:100%">${edit?'Save':'Add'}</button></div>
       </div>
-      <p class="small" style="margin-top:8px">Books = Real + Writeoff (auto-calculated). Writeoff captures small differences — fees, rounding — you're writing off against actual cash movement.</p>
+      <p class="small" style="margin-top:8px">Books = Real + Writeoff (auto-calculated). Writeoff captures small differences - fees, rounding - you're writing off against actual cash movement.</p>
       <div id="cbErr" class="err"></div>
       ${edit ? '<button class="btn-ghost btn-sm" id="cbCancelBtn" style="margin-top:8px">Cancel Edit</button>' : ''}
       `}
@@ -1544,7 +1596,7 @@ function renderCashBank(){
     <div class="card">
       <h3>Import Reconciliation Entries from CSV</h3>
       <div class="import-row"><input type="file" id="cbCsvFile" accept=".csv"><button class="btn-ghost btn-sm" id="importCbBtn">Upload &amp; Import</button></div>
-      <p class="small">Columns (case-insensitive): <code>Account, Date, Description, Real, Writeoff</code> — Account must match a Cash/Bank account name exactly.</p>
+      <p class="small">Columns (case-insensitive): <code>Account, Date, Description, Real, Writeoff</code> - Account must match a Cash/Bank account name exactly.</p>
       <div id="cbCsvMsg" class="msg"></div>
     </div>
     <div id="cbAccountsWrap"></div>
@@ -1572,7 +1624,7 @@ function renderCashBank(){
     const accSel = el.querySelector('#cbAcc');
     accSel.innerHTML = cashAccs.map(a=>`<option value="${a.id}" ${edit&&edit.accId===a.id?'selected':''}>${acctCode(a)} · ${a.name}</option>`).join('');
     enhanceSelect(accSel);
-    el.querySelector('#cbSaveBtn').onclick = ()=>{
+    el.querySelector('#cbSaveBtn').onclick = async ()=>{
       const err = m=>el.querySelector('#cbErr').textContent=m; err('');
       const accId = accSel.value, date = el.querySelector('#cbDate').value, description = el.querySelector('#cbDesc').value.trim();
       const real = parseFloat(el.querySelector('#cbReal').value);
@@ -1580,6 +1632,7 @@ function renderCashBank(){
       if(!accId){ err('Select an account.'); return; }
       if(!date){ err('Date is required.'); return; }
       if(isNaN(real)){ err('Enter the Real (actual) amount.'); return; }
+      if(await lockBlocked([date, edit&&edit.date])) return;
       if(edit){ Object.assign(edit, {accId, date, description, real, writeoff}); editCashMov=null; }
       else { state.cashRecon.push({id:uid(), accId, date, description, real, writeoff}); }
       save(); renderAll();
@@ -1590,20 +1643,20 @@ function renderCashBank(){
       const file = el.querySelector('#cbCsvFile').files[0];
       const msg = el.querySelector('#cbCsvMsg'); msg.textContent='';
       if(!file){ msg.className='msg err'; msg.textContent='Please select a CSV file first.'; return; }
-      Papa.parse(file, { header:true, skipEmptyLines:true, transformHeader:h=>h.trim().toLowerCase(), complete:(res)=>{
+      Papa.parse(file, { header:true, skipEmptyLines:true, transformHeader:h=>h.trim().toLowerCase(), complete:async (res)=>{ const snap=JSON.stringify(state); IMP_BAD=[];
         let added=0, skipped=0;
-        res.data.forEach(row=>{
-          const accName = (row.account||'').trim();
+        res.data.forEach((row,i)=>{
+          const accName = (row.account||row.accountname||row['account name']||'').trim();
           const acc = cashAccs.find(a=>a.name.toLowerCase()===accName.toLowerCase());
           const date = (row.date||'').trim();
           const real = parseFloat(row.real);
-          if(!acc || !date || isNaN(real)){ skipped++; return; }
+          if(!acc || !date || isNaN(real) || isLocked(date)){ skipped++; IMP_BAD.push('Row '+(i+2)+': '+(!acc?'Not a Cash/Bank account: '+accName:(!date?'Missing date':(isNaN(real)?'Invalid Real amount':'Date is in the locked period')))); return; }
           const writeoff = parseFloat(row.writeoff) || 0;
           state.cashRecon.push({id:uid(), accId:acc.id, date, description:(row.description||'').trim(), real, writeoff});
           added++;
         });
-        save(); renderAll();
-        msg.className='msg ok'; msg.textContent=`Import finished: ${added} added, ${skipped} skipped.`;
+        if(!(await showPreview('Import Preview',added+' row(s)',IMP_BAD))){ state=JSON.parse(snap); msg.className='msg err'; msg.textContent='Import cancelled. No changes were made.'; return; }
+      save(); renderAll(); msg.className='msg ok'; msg.textContent=`Import finished: ${added} added, ${skipped} skipped.`;
       }});
     };
   }
@@ -1626,16 +1679,17 @@ function renderCashBank(){
       <table><thead><tr><th>Date</th><th>Day</th><th>Description</th><th class="num">Real</th><th class="num">Writeoff</th><th class="num">Books</th><th></th></tr></thead>
       <tbody>${body}</tbody>
       <tfoot><tr><td colspan="3">Total</td><td class="num">${fmt(totReal)}</td><td class="num">${fmt(totWriteoff)}</td><td class="num">${fmt(totBooks)}</td><td></td></tr></tfoot></table>
-      <p class="${Math.abs(variance)<0.5?'ok':'err'}" style="margin-top:10px">Books total ${fmt(totBooks)} vs Ledger closing balance ${fmt(ledgerClosing)} — ${Math.abs(variance)<0.5?'Matched':'Variance of '+fmt(Math.abs(variance))}</p>
+      <p class="${Math.abs(variance)<0.5?'ok':'err'}" style="margin-top:10px">Books total ${fmt(totBooks)} vs Ledger closing balance ${fmt(ledgerClosing)} - ${Math.abs(variance)<0.5?'Matched':'Variance of '+fmt(Math.abs(variance))}</p>
     </div>`;
   }).join('');
-  wrap.innerHTML = blocks || `<div class="card"><p class="empty">No reconciliation entries yet — add one above for any Cash/Bank account.</p></div>`;
+  wrap.innerHTML = blocks || `<div class="card"><p class="empty">No reconciliation entries yet - add one above for any Cash/Bank account.</p></div>`;
 
   wrap.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{
     editCashMov = state.cashRecon.find(x=>x.id===b.dataset.e);
     renderAll(); scrollToPanelTop('panel-cashbank');
   });
   wrap.querySelectorAll('[data-d]').forEach(b=>b.onclick=async ()=>{
+    { const m0=state.cashRecon.find(x=>x.id===b.dataset.d); if(await lockBlocked([m0&&m0.date])) return; }
     if(!(await showConfirm('Delete this reconciliation entry?'))) return;
     state.cashRecon = state.cashRecon.filter(x=>x.id!==b.dataset.d);
     save(); renderAll();
@@ -1691,11 +1745,11 @@ function renderCashBank(){
       const total = DENOMS.reduce((s,d)=>s+d*(c.denominations[d]||0),0);
       const variance = total - ledgerClosing;
       const breakdown = DENOMS.filter(d=>c.denominations[d]).map(d=>`${d}×${c.denominations[d]}`).join(', ');
-      return `<tr><td>${c.date}</td><td class="small">${breakdown||'—'}${c.note?' · '+c.note:''}</td><td class="num">${fmt(total)}</td>
+      return `<tr><td>${c.date}</td><td class="small">${breakdown||'-'}${c.note?' · '+c.note:''}</td><td class="num">${fmt(total)}</td>
       <td class="num ${Math.abs(variance)<0.5?'ok':'err'}">${Math.abs(variance)<0.5?'Matched':fmt(Math.abs(variance))}</td>
       <td><button class="rowbtn" data-ce="${c.id}">${t('edit')}</button><button class="rowbtn danger" data-cd="${c.id}">${t('delete')}</button></td></tr>`;
     }).join('');
-    return `<div class="card"><h3><span><span class="code-badge">${acctCode(a)}</span>${a.name} — Cash Counts</span><span class="small">Ledger balance: ${fmt(ledgerClosing)}</span></h3>
+    return `<div class="card"><h3><span><span class="code-badge">${acctCode(a)}</span>${a.name} - Cash Counts</span><span class="small">Ledger balance: ${fmt(ledgerClosing)}</span></h3>
       <table><thead><tr><th>Date</th><th>Breakdown</th><th class="num">Counted</th><th class="num">vs Ledger</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>`;
   }).join('');
@@ -1802,6 +1856,32 @@ function renderAudit(){
 }
 
 /* ---------------- Settings Panel ---------------- */
+function settingsControlsHtml(){
+  return `<div class="card"><h3>Accounting Controls</h3>
+  <div class="grid set">
+    <div><label>Balance Sheet Retained Earnings Display Mode</label><select id="setRE">
+      <option value="single" ${pref.retainedEarningsMode==='single'?'selected':''}>Single Line: Total Accumulated Retained Earnings</option>
+      <option value="split" ${pref.retainedEarningsMode!=='single'?'selected':''}>Two Lines: Brought Forward + Current Year Net Profit / (Loss)</option></select></div>
+    <div><label>Lock Accounting Period (Lock Date)</label><input type="date" id="setLock" value="${pref.lockDate||''}"></div>
+    <div><label>Company Logo (Shown On PDF Reports)</label><input type="file" id="setLogo" accept="image/*"></div>
+    <div id="logoPrev" style="align-self:end"></div>
+  </div>
+  <div class="btn-row" style="margin-top:10px"><button class="btn-primary" id="saveCtlBtn">Save</button><button class="btn-ghost" id="rmLogoBtn">Remove Logo</button></div>
+  <p class="small" style="margin-top:8px">Vouchers and reconciliation entries dated on or before the lock date cannot be added, edited, renumbered or deleted.</p></div>`;
+}
+function bindSettingsControls(el){
+  enhanceSelect(el.querySelector('#setRE'));
+  const showLogo=()=>{ const l=getLogo(); el.querySelector('#logoPrev').innerHTML=l?`<img src="${l}" alt="" style="max-height:48px;max-width:160px">`:'<span class="small">No Logo Set</span>'; };
+  showLogo();
+  el.querySelector('#setLogo').onchange=ev=>{
+    const f=ev.target.files[0]; if(!f) return;
+    const img=new Image();
+    img.onload=()=>{ const k=Math.min(1,320/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k); c.getContext('2d').drawImage(img,0,0,c.width,c.height); localStorage.setItem(LS_LOGO,c.toDataURL('image/png')); URL.revokeObjectURL(img.src); showLogo(); showToast('Logo saved.'); };
+    img.src=URL.createObjectURL(f);
+  };
+  el.querySelector('#rmLogoBtn').onclick=()=>{ localStorage.removeItem(LS_LOGO); showLogo(); };
+  el.querySelector('#saveCtlBtn').onclick=()=>{ pref.retainedEarningsMode=el.querySelector('#setRE').value; pref.lockDate=el.querySelector('#setLock').value; savePref(); renderAll(); showToast('Accounting controls saved.'); };
+}
 function renderSettings(){
   const el = document.getElementById('panel-settings');
   el.innerHTML = `
@@ -1849,6 +1929,7 @@ function renderSettings(){
       <div style="margin-top:10px"><button class="btn-primary" id="saveTxtBtn">${t('save')}</button></div>
     </div>`;
 
+  el.insertAdjacentHTML('beforeend', settingsControlsHtml()); bindSettingsControls(el);
   enhanceSelect(el.querySelector('#setShowBrand'));
   enhanceSelect(el.querySelector('#setDec'));
   enhanceSelect(el.querySelector('#setScale'));
@@ -1882,6 +1963,11 @@ function renderSettings(){
   if(window.renderCloudUI) window.renderCloudUI();
 }
 
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.code==='KeyS'){ e.preventDefault(); const b=document.getElementById('postVBtn'); if(pref.tab==='journal'&&b&&!document.querySelector('.modal-overlay.open')) b.click(); }
+  else if(e.altKey&&e.code==='KeyN'){ e.preventDefault(); draft={date:'',narration:'',lines:[]}; editingVoucher=null; DIRTY.add('journal'); if(pref.tab==='journal') renderPanel('journal'); else switchTab('journal'); setTimeout(()=>{ const i=document.getElementById('vNar'); if(i) i.focus(); },60); }
+  else if(e.key==='Escape'){ _closeAllSel(); const a=document.getElementById('acctOverlay'); if(a) a.classList.remove('open'); closeMoreSheet(); }
+});
 renderAll();
 </script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -2003,7 +2089,7 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
 
 /* ============ 1) GOOGLE DRIVE BACKUP / RESTORE ============ */
 (function () {
-  const CLIENT_ID = '539060012563-quokfjku8f1m98lekljmvmi6o45ian3e.apps.googleusercontent.com';
+  const CLIENT_ID = (window.KHATA_CONFIG && window.KHATA_CONFIG.googleClientId) || 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com';
   const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
   const FILE = 'khata-backup.json';
   const setLS = Storage.prototype.setItem;
@@ -2012,6 +2098,7 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
 
   function getToken() {
     return new Promise((res, rej) => {
+      if (/^YOUR_/.test(CLIENT_ID)) return rej(new Error('Google client ID is not configured (see config.js note at the top of index.html).'));
       if (!window.google || !google.accounts) return rej(new Error('Google script load nahi hui. Internet check karein.'));
       const opts = {};
       if (localStorage.getItem('__gd_choose') === '1') opts.prompt = 'select_account';
@@ -2085,20 +2172,13 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
 
 /* ============ 2) FIREBASE LIVE SYNC ============ */
 (function () {
-  if (!window.firebase) {   // offline / script blocked: app still works locally
-    const off = async () => { await showAlert('Internet nahi hai. Cloud sync abhi available nahi.'); };
+  const FB = (window.KHATA_CONFIG && window.KHATA_CONFIG.firebase) || { apiKey:'YOUR_FIREBASE_API_KEY', authDomain:'YOUR_PROJECT.firebaseapp.com', projectId:'YOUR_PROJECT_ID', storageBucket:'YOUR_PROJECT.firebasestorage.app', messagingSenderId:'YOUR_SENDER_ID', appId:'YOUR_APP_ID' };
+  if (!window.firebase || /^YOUR_/.test(FB.apiKey)) {   // offline / script blocked: app still works locally
+    const off = async () => { await showAlert('Cloud sync is not configured or you are offline. See the config.js note at the top of index.html.'); };
     window.syncLogin = off; window.syncSwitch = off; window.syncLogout = off;
     return;
   }
-  firebase.initializeApp({
-    apiKey: "AIzaSyCT7crNv3baTB58MtLnl4h-KocYEW0M0JY",
-    authDomain: "khat-d682e.firebaseapp.com",
-    projectId: "khat-d682e",
-    storageBucket: "khat-d682e.firebasestorage.app",
-    messagingSenderId: "539060012563",
-    appId: "1:539060012563:web:ec5db5755ff7f9a86761e6",
-    measurementId: "G-600S8Y2K3P"
-  });
+  firebase.initializeApp(FB);
 
   const auth = firebase.auth(), db = firebase.firestore();
   const PREF_KEY = 'khata_pref_v6';
