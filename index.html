@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Khata — Books of Account & Audit Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+:root{
+  --navy:#0f2038; --navy2:#16304f; --paper:#f8f6f0; --surface:#ffffff; --surface2:#f1ece1;
+  --ink:#1c2430; --muted:#6c6255; --line:#dcd5c5; --gold:#a6803d; --good:#2f6b45; --bad:#a13d34;
+  --f-head:'Source Serif 4',Georgia,serif; --f-ui:'Inter',system-ui,sans-serif; --f-num:'IBM Plex Mono',Menlo,Consolas,monospace;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+:root[data-theme="dark"]{ --navy:#0a1220; --navy2:#12203a; --paper:#12130f; --surface:#1a1b15; --surface2:#22231b; --ink:#e9e4d6; --muted:#9b9484; --line:#33342a; --gold:#c99a4e; --good:#5cb37a; --bad:#e08072; }
+:root[data-theme="slate"]{ --navy:#1b2733; --navy2:#24384a; --paper:#eef1f4; --surface:#ffffff; --surface2:#e3e8ed; --ink:#1c2733; --muted:#5c6b7a; --line:#c8d0d8; --gold:#3f6f9c; --good:#2f7a4f; --bad:#a13d3d; }
+:root[data-theme="forest"]{ --navy:#152317; --navy2:#1e3320; --paper:#eef2e6; --surface:#ffffff; --surface2:#e3ead6; --ink:#1e2b1f; --muted:#5c6b52; --line:#c9d4b3; --gold:#7a8f3f; --good:#2f6d3a; --bad:#a13d3d; }
+:root[data-theme="slate-dark"]{ --navy:#4a7ba8; --navy2:#2f4a63; --paper:#0d1420; --surface:#141d2b; --surface2:#1c2735; --ink:#dbe4ec; --muted:#8b9aac; --line:#2a3646; --gold:#5b9bd5; --good:#5cb37a; --bad:#e08072; }
+:root[data-theme="forest-dark"]{ --navy:#5f8a3f; --navy2:#31432a; --paper:#0f1710; --surface:#161f18; --surface2:#1e2a20; --ink:#dde8dd; --muted:#8fa088; --line:#2c3a2c; --gold:#8fbf4f; --good:#5cb37a; --bad:#e08072; }
+*{margin:0;box-sizing:inherit}
+html,body{height:100%}
+body{font-family:var(--f-ui);background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5}
+h1,h2,h3{font-family:var(--f-head);font-weight:600}
+.app{display:flex;min-height:100vh}
+.sidebar{width:240px;flex:none;background:var(--navy);color:#eee8da;display:flex;flex-direction:column;
+  padding:20px 14px calc(16px + env(safe-area-inset-bottom,0px));position:sticky;top:0;height:100vh;overflow-y:auto}
+.brand{padding:6px 10px 14px;border-bottom:1px solid rgba(255,255,255,.14);margin-bottom:14px}
+.brand .name{font-family:var(--f-head);font-size:21px;font-weight:700;color:#f5f1e4}
+.brand .co-sub{font-size:11.5px;color:var(--gold);margin-top:2px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand .tag{font-size:10.5px;color:#a9a08a;margin-top:2px;letter-spacing:.2px}
+.navlist{display:flex;flex-direction:column;gap:3px;flex:1}
+.navlist button{text-align:left;background:none;border:none;color:#cdc6b3;padding:9px 12px;border-radius:6px;
+  font-family:var(--f-ui);font-size:13.5px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:9px;transition:background .15s ease,color .15s ease,transform .15s ease}
+.navlist button .dot{width:6px;height:6px;border-radius:50%;background:transparent;transition:background .15s ease,transform .15s ease}
+.navlist button:hover{background:rgba(255,255,255,.07);color:#fff;transform:translateX(2px)}
+.navlist button.active{background:var(--navy2);color:#fff;font-weight:600}
+.navlist button.active .dot{background:var(--gold);transform:scale(1.3)}
+.sidebar-foot{font-size:11px;color:#8a8270;padding:12px 10px 0;border-top:1px solid rgba(255,255,255,.1);margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.main{flex:1;min-width:0;padding:22px 28px 40px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.topbar h2{font-size:22px}
+.top-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ctrl-group{display:flex;align-items:center;gap:6px;background:var(--surface);padding:4px 8px;border:1px solid var(--line);border-radius:6px}
+.ctrl-group label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin:0;font-weight:600}
+.ctrl-group select{border:none;background:var(--surface);color:var(--ink)}
+.ctrl-group select option{background:var(--surface);color:var(--ink)}
+select,button,input{font-family:var(--f-ui);font-size:13px;border:1px solid var(--line);background:var(--surface);
+  color:var(--ink);border-radius:5px;padding:6px 10px}
+select option{background:var(--surface);color:var(--ink)}
+button{cursor:pointer;transition:background .15s ease,border-color .15s ease,transform .08s ease,color .15s ease,box-shadow .15s ease}
+button:active{transform:scale(.96)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(0,0,0,.18)}
+.btn-primary:active{transform:translateY(0) scale(.97)}
+.btn-ghost:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,.08)}
+.rowbtn:hover{transform:translateY(-1px)}
+.pill-btn{transition:background .15s,color .15s,border-color .15s,transform .08s}
+.pill-btn:hover:not(.active){border-color:var(--gold);color:var(--ink)}
+.pill-btn:active{transform:scale(.96)}
+a{transition:color .15s ease}
+tbody tr{transition:background .12s ease}
+button:hover{background:var(--surface2)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+.btn-primary{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600}
+.btn-primary:hover{background:var(--navy2)}
+.btn-ghost{background:none;border:1px solid var(--line)}
+.btn-sm{padding:4px 9px;font-size:12px}
+.panel{display:none}
+.panel.active{display:block;animation:panelIn .22s ease}
+@keyframes panelIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.02);transition:box-shadow .18s ease,border-color .18s ease}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,.07);border-color:var(--gold)}
+.card h3{font-size:15px;margin-bottom:12px;padding-bottom:9px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.grid{display:grid;gap:10px}
+.grid.acc{grid-template-columns:1.5fr 1fr 110px 1fr auto auto}
+.grid.yr{grid-template-columns:1fr auto auto}
+.grid.set{grid-template-columns:1fr 1fr}
+.grid.audit{grid-template-columns:1.5fr 1fr 1fr 1fr auto auto}
+label{font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;font-weight:600}
+select,input{width:100%}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line)}
+.tb-table th,.tb-table td{padding:12px 14px}
+.tb-table tbody tr:not(.unit-row):hover{background:var(--surface2)}
+table tbody tr:not(.unit-row):not(.section-row):hover td{background:var(--surface2)}
+th.year-col{font-size:14px!important;font-weight:700!important;color:var(--gold)!important;letter-spacing:.3px}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-family:var(--f-num)}
+tfoot td{font-weight:700;border-top:2px solid var(--ink);border-bottom:none;font-family:var(--f-num)}
+tfoot td:first-child{font-family:var(--f-ui)}
+.tag{font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--muted);font-weight:500}
+.tag.Asset,.tag.Income{color:var(--good);border-color:rgba(47,107,69,.3)} .tag.Liability,.tag.Expense{color:var(--bad);border-color:rgba(161,61,52,.3)}
+.small{font-size:11.5px;color:var(--muted)}
+.rowbtn{background:none;border:1px solid var(--line);color:var(--muted);cursor:pointer;padding:4px 8px;font-size:12px;border-radius:5px;margin-left:4px;line-height:1}
+.rowbtn:hover{color:var(--ink);background:var(--surface2)}
+.rowbtn.danger:hover{color:var(--bad);border-color:var(--bad)}
+.rowbtn:disabled{opacity:.3;cursor:not-allowed;background:none}
+.btn-group{white-space:nowrap}
+.empty{color:var(--muted);font-style:italic;padding:14px 0;font-size:13px}
+.report-head{text-align:center;margin-bottom:18px}
+.report-head .co{font-size:20px;font-family:var(--f-head);font-weight:700;color:var(--ink)}
+.report-head .title{font-size:15px;font-family:var(--f-head);font-weight:600;margin-top:2px;color:var(--gold)}
+.report-head .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.unit-note{font-size:11px;color:var(--muted);font-style:italic;margin-top:4px}
+.unit-row td{text-align:center;font-style:italic;color:var(--muted);font-size:11px;background:var(--surface2)!important;font-weight:400!important}
+.section-row td{background:var(--surface2);font-weight:700;padding-top:9px;padding-bottom:7px;color:var(--gold);font-size:12.5px;text-transform:uppercase;letter-spacing:.3px}
+.subtotal-row td{font-weight:700;border-top:1px solid var(--line);font-family:var(--f-num)}
+.subtotal-row td:first-child{font-family:var(--f-ui)}
+.code-badge{font-family:var(--f-num);font-size:10.5px;color:var(--gold);background:var(--surface2);padding:1px 6px;border-radius:4px;margin-right:6px}
+.err{color:var(--bad);font-size:12px;margin-top:8px;font-weight:500}
+.ok{color:var(--good);font-size:12px;margin-top:8px;font-weight:500}
+.stat-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.stat{background:var(--surface2);border-radius:7px;padding:10px 16px;min-width:130px;border-left:3px solid var(--gold);flex:1;transition:transform .15s ease,box-shadow .15s ease}
+.stat:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.08)}
+.stat .l{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;font-weight:600}
+.stat .v{font-family:var(--f-num);font-size:17px;font-weight:600;margin-top:2px}
+.import-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.denom-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}
+.denom-cell{background:var(--surface2);border-radius:7px;padding:8px 10px}
+.denom-cell label{font-family:var(--f-num);font-size:13px;font-weight:700;color:var(--gold);text-transform:none}
+.denom-cell input{margin-top:4px}
+.denom-cell .sub{font-size:11px;color:var(--muted);margin-top:3px;font-family:var(--f-num)}
+.import-row input[type=file]{width:auto;flex:1;min-width:180px;font-size:12px;padding:5px}
+.msg{font-size:12px;margin-top:6px}
+.searchbar{margin-bottom:12px}
+.searchbar input{max-width:260px}
+.voucher-block{border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin-bottom:10px;background:var(--surface)}
+.voucher-block .vhead{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;margin-bottom:6px;flex-wrap:wrap;gap:6px}
+.voucher-block .vhead .vid{font-family:var(--f-num);color:var(--gold);font-weight:600}
+.pill-btn{border:1px solid var(--line);background:var(--surface);padding:4px 10px;font-size:12px;border-radius:20px;cursor:pointer}
+.pill-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+select.csel-native{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+.csel-wrap{position:relative;display:inline-block}
+.csel-btn{display:flex;align-items:center;gap:6px;justify-content:space-between;cursor:pointer;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-family:var(--f-ui);font-size:13px;min-width:100%;transition:border-color .15s,background .15s}
+.csel-btn:hover{border-color:var(--gold)}
+.csel-btn .csel-arrow{font-size:10px;color:var(--muted);transition:transform .15s}
+.csel-btn.open .csel-arrow{transform:rotate(180deg)}
+.csel-list{display:none;position:fixed;min-width:160px;max-height:260px;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:9999;padding:4px}
+.csel-list.open{display:block}
+.csel-item{padding:7px 10px;font-size:13px;border-radius:4px;cursor:pointer;color:var(--ink);white-space:nowrap}
+.csel-item:hover{background:var(--surface2)}
+.csel-item.active{background:var(--navy);color:#fff}
+.ctrl-group .csel-btn{border:none;background:none;padding:2px 4px}
+.mode-toggle{display:inline-flex;background:var(--surface2);border-radius:6px;padding:2px;gap:2px}
+.mode-btn{border:none;background:none;color:var(--muted);font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:4px;cursor:pointer;transition:background .15s,color .15s}
+.mode-btn:hover{color:var(--ink)}
+.mode-btn.active{background:var(--navy);color:#fff}
+#singlePrintHolder{display:none}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,10,10,.55);z-index:10000;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal-card{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:22px 24px;max-width:400px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.35);animation:modalIn .15s ease}
+@keyframes modalIn{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}
+.modal-msg{font-size:14px;line-height:1.5;margin-bottom:18px;white-space:pre-line}
+.modal-btns{display:flex;justify-content:flex-end;gap:8px}
+.app-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;box-shadow:0 10px 25px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:10001}
+.app-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media print{
+  body.printing-single .sidebar, body.printing-single .topbar, body.printing-single #panels{display:none!important}
+  body.printing-single #singlePrintHolder{display:block!important}
+}
+@page{ margin: 12mm 10mm; }
+@media(max-width:850px){
+  .app{flex-direction:column} .sidebar{position:relative;width:100%;height:auto;flex-direction:row;overflow-x:auto;padding:12px}
+  .brand{display:none} .navlist{flex-direction:row;flex:none} .sidebar-foot{display:none}
+  .grid.acc,.grid.set,.grid.audit{grid-template-columns:1fr} .main{padding:16px}
+}
+@media print{
+  body{background:#fff;color:#000} .sidebar,.no-print,.top-controls{display:none!important}
+  .app{display:block} .main{padding:0} .panel{display:none} .panel.print-show{display:block!important}
+  .card{border:none;padding:0;margin-bottom:26px;page-break-inside:avoid;box-shadow:none}
+}
+</style>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f2038">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Khata">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand" id="sidebarBrandContainer">
+      <div class="name" id="sideCoName">Business Name</div>
+      <div class="co-sub" id="sideSubTitle">Books of Account</div>
+      <div class="tag" id="sideTag">Audit Tracker</div>
+    </div>
+    <nav class="navlist" id="navlist"></nav>
+    <div class="sidebar-foot">
+      <button class="nav-btn" id="settingsNavBtn" style="width:100%;text-align:left;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.12);padding:8px 10px;border-radius:6px;cursor:pointer;font-size:12.5px;display:flex;align-items:center;gap:8px">
+        ⚙ <span id="lblSettingsBtn">Settings</span>
+      </button>
+      <div style="font-size:10.5px;color:#8a8270;margin-top:4px" id="lblLocalDataNote">Data stored in local browser.</div>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <h2 id="pageTitle"></h2>
+      <div class="top-controls no-print">
+        <div class="ctrl-group">
+          <label id="lblYearGroup">Year:</label>
+          <select id="yearSel" style="border:none;background:var(--surface);color:var(--ink);padding:2px 4px;font-weight:600" aria-label="Reporting year"></select>
+        </div>
+        <div class="ctrl-group">
+          <label id="lblThemeGroup">Theme:</label>
+          <span class="mode-toggle" id="modeToggle">
+            <button type="button" class="mode-btn" data-mode="light">Light</button>
+            <button type="button" class="mode-btn" data-mode="dark">Dark</button>
+          </span>
+          <select id="themeSel" style="border:none;background:var(--surface);color:var(--ink);padding:2px 4px;" aria-label="Theme palette"></select>
+        </div>
+        <div class="ctrl-group">
+          <label id="lblLangGroup">Lang:</label>
+          <select id="langSel" style="border:none;background:var(--surface);color:var(--ink);padding:2px 4px;" aria-label="Language">
+            <option value="en">English</option>
+            <option value="ur">Roman Urdu</option>
+          </select>
+        </div>
+        <button class="btn-ghost btn-sm" id="printBtn">Export PDF</button>
+      </div>
+    </div>
+    <div id="panels"></div>
+    <div id="singlePrintHolder"></div>
+    <div id="modalOverlay" class="modal-overlay no-print" role="alertdialog" aria-modal="true">
+      <div class="modal-card">
+        <div id="modalMsg" class="modal-msg"></div>
+        <div id="modalBtns" class="modal-btns"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const LS_KEY='khata_v5', LS_PREF='khata_pref_v6';
+function uid(){ return Math.random().toString(36).slice(2,9); }
+
+let state = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+if(!state || !state.years){
+  const yId = uid();
+  state = { years:[{id:yId,name:'FY 2025'}], currentYearId:yId, accounts:[], entries:[], auditClients:[], cashRecon:[], cashCounts:[] };
+}
+if(!state.auditClients) state.auditClients = [];
+if(!state.cashRecon) state.cashRecon = [];
+if(!state.cashCounts) state.cashCounts = [];
+// migrate legacy audit client rows (manual amounts, free-text audit year) to year-linked rows with overrides
+state.auditClients.forEach(cl=>{
+  if(!cl.yearId){
+    const y = state.years.find(y=>(y.name||'').replace(/^FY\s*/i,'')===String(cl.auditYear||''));
+    cl.yearId = y ? y.id : state.currentYearId;
+    if(cl.expOverride===undefined) cl.expOverride = cl.expenses ? cl.expenses : null;
+    if(cl.firmOverride===undefined) cl.firmOverride = cl.firmAllowance ? cl.firmAllowance : null;
+    if(cl.clientOverride===undefined) cl.clientOverride = cl.clientAllowance ? cl.clientAllowance : null;
+  }
+});
+
+let defaultPref = {
+  theme:'light',
+  lang:'en',
+  tab:'years',
+  tbView:'2col',
+  companyName:'My Business',
+  subTitleText:'Books of Account',
+  tagText:'Audit Tracker',
+  showBrandSidebar:true,
+  currencySymbol:'PKR',
+  decimals:2,
+  amountScale:'1',
+  showComparative:true,
+  retainedEarningsMode:'split',
+  txtPL:'Profit & Loss Statement',
+  txtBS:'Balance Sheet',
+  txtCF:'Cash Flow Statement',
+  txtTB:'Trial Balance',
+  txtInc:'Income',
+  txtExp:'Expense',
+  txtAsset:'Assets',
+  txtLiab:'Liabilities',
+  txtEq:'Equity'
+};
+
+let pref = Object.assign({}, defaultPref, JSON.parse(localStorage.getItem(LS_PREF) || '{}'));
+
+const DICT = {
+  en: {
+    tagline: 'Books & Audit Tracker',
+    years: 'Reporting Years',
+    accounts: 'Chart of Accounts',
+    journal: 'Journal Entries',
+    ledgers: 'Ledgers',
+    tb: 'Trial Balance',
+    pl: 'Profit & Loss',
+    bs: 'Balance Sheet',
+    cf: 'Cash Flow',
+    cashbank: 'Cash & Bank Movements',
+    audit: 'Audit Clients & Allowance',
+    settings: 'Settings',
+    localData: 'Data is stored locally in this browser.',
+    addYr: 'Add Reporting Year',
+    editYr: 'Edit Reporting Year',
+    yrName: 'Year / Period Name',
+    save: 'Save',
+    cancel: 'Cancel',
+    add: 'Add',
+    edit: 'Edit',
+    delete: 'Delete',
+    exportPdf: 'Export PDF',
+    companyNameLbl: 'Business / Company Name',
+    numberFmt: 'Number Formatting & Options',
+    decimalsLbl: 'Decimals',
+    scaleLbl: 'Amount Display Unit',
+    currLbl: 'Currency Symbol',
+    compLbl: 'Show Comparative Figures',
+    reModeLbl: 'BS Retained Earnings Layout',
+    reSingle: 'One Row (Total Accumulated)',
+    reSplit: 'Two Rows (Brought Forward + Current Year)',
+    customTextLbl: 'Custom Text & Labels Editing',
+    noAcc: 'No account created yet.',
+    noEntries: 'No entries found.',
+    dr: 'Debit',
+    cr: 'Credit',
+    balance: 'Balance',
+    total: 'Total',
+    netProfit: 'Net Profit',
+    netLoss: 'Net Loss'
+  },
+  ur: {
+    tagline: 'Khaata Books & Audit Tracker',
+    years: 'Saal / Reporting Years',
+    accounts: 'Chart of Accounts',
+    journal: 'Journal Entries (Vouchers)',
+    ledgers: 'Khata Ledgers',
+    tb: 'Trial Balance',
+    pl: 'Nafe o Nuqsan (P&L)',
+    bs: 'Balance Sheet',
+    cf: 'Cash Flow Statement',
+    cashbank: 'Cash & Bank Movements',
+    audit: 'Audit Clients & Allowance',
+    settings: 'Settings / Tarseem',
+    localData: 'Data isi browser me safe hai.',
+    addYr: 'Naya Saal Shamil Karein',
+    editYr: 'Saal Edit Karein',
+    yrName: 'Saal ka Naam / Period',
+    save: 'Save Karein',
+    cancel: 'Kansal',
+    add: 'Shamil Karein',
+    edit: 'Tardeed',
+    delete: 'Khatam',
+    exportPdf: 'PDF Banayein',
+    companyNameLbl: 'Business / Company Ka Naam',
+    numberFmt: 'Raqam Aur Adad Ki Setting',
+    decimalsLbl: 'Ashariya (Decimals)',
+    scaleLbl: 'Raqam Dekhane Ka Tarika',
+    currLbl: 'Rupaye / Currency Symbol',
+    compLbl: 'Pichlay Saal Se Muqabla Dekhayein',
+    reModeLbl: 'BS Mein Retained Earnings Tarika',
+    reSingle: 'Ek Hi Line Item Mein',
+    reSplit: 'Do Lines (Brought Forward + Is Saal Ka Nafa)',
+    customTextLbl: 'Text / Titles Edit Karein',
+    noAcc: 'Koi account abhi tak nahi bana.',
+    noEntries: 'Is saal koi entry nahi.',
+    dr: 'Naam (Debit)',
+    cr: 'Jama (Credit)',
+    balance: 'Baqaya',
+    total: 'Meezan / Total',
+    netProfit: 'Khaalis Nafa',
+    netLoss: 'Khaalis Nuqsan'
+  }
+};
+
+function t(key){ const lang = pref.lang || 'en'; return (DICT[lang] && DICT[lang][key]) || DICT['en'][key] || key; }
+
+const TYPES = ['Asset','Liability','Equity','Income','Expense'];
+const CF_CATS = ['Operating','Investing','Financing'];
+function normalIsDebit(type){ return type==='Asset'||type==='Expense'; }
+function isPL(acc){ return acc.type==='Income'||acc.type==='Expense'; }
+function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+function savePref(){ localStorage.setItem(LS_PREF, JSON.stringify(pref)); }
+
+function fmt(n, raw=false){
+  if(isNaN(n) || n === null) return '—';
+  const scale = parseFloat(pref.amountScale || 1);
+  n = n / scale;
+  const dec = parseInt(pref.decimals !== undefined ? pref.decimals : 2);
+  n = Math.round((n + Number.EPSILON) * Math.pow(10, dec)) / Math.pow(10, dec);
+  const neg = n < 0;
+  n = Math.abs(n);
+  const formattedNum = n.toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  if(raw) return (neg ? '-' : '') + formattedNum;
+  return (neg ? '(' : '') + formattedNum + (neg ? ')' : '');
+}
+
+function getHeaderUnitNote(){
+  const sym = pref.currencySymbol || 'PKR';
+  if(pref.amountScale === '1000') return `(Amounts in ${sym} '000)`;
+  if(pref.amountScale === '1000000') return `(Amounts in ${sym} Million)`;
+  return `(Amounts in ${sym})`;
+}
+
+function accById(id){ return state.accounts.find(a=>a.id===id); }
+function yearIdx(id){ return state.years.findIndex(y=>y.id===id); }
+function selIdx(){ return yearIdx(state.currentYearId); }
+function entriesUpTo(idx){ return state.entries.filter(e=>{const i=yearIdx(e.yearId); return i>=0 && i<=idx;}); }
+function entriesIn(idx){ return state.entries.filter(e=>yearIdx(e.yearId)===idx); }
+
+function calcBalance(acc, legs){ let dr=0,cr=0; legs.forEach(e=>{ if(e.accId===acc.id){ dr+=Number(e.dr||0); cr+=Number(e.cr||0); } });
+  const net = normalIsDebit(acc.type) ? dr-cr : cr-dr; return {dr,cr,net}; }
+function balanceFor(acc, idx){ if(idx<0) return {dr:0,cr:0,net:0}; return isPL(acc) ? calcBalance(acc, entriesIn(idx)) : calcBalance(acc, entriesUpTo(idx)); }
+function nextVoucherNo(idx){ const nums = entriesIn(idx).map(e=>{ const m=/^JV-(\d+)$/.exec(e.voucher); return m?parseInt(m[1]):0; });
+  const max = nums.length?Math.max(...nums):0; return 'JV-'+String(max+1).padStart(4,'0'); }
+
+function downloadCSV(rows, filename){
+  const csv = rows.map(r=>r.map(c=>{ const s=String(c==null?'':c); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }).join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+}
+
+const TABS = [
+  ['years', 'years'],
+  ['accounts', 'accounts'],
+  ['journal', 'journal'],
+  ['ledgers', 'ledgers'],
+  ['tb', 'tb'],
+  ['pl', 'pl'],
+  ['bs', 'bs'],
+  ['cf', 'cf'],
+  ['cashbank', 'cashbank'],
+  ['audit', 'audit'],
+  ['settings', 'settings']
+];
+
+let editAcc=null, editYr=null, editAudit=null, editCashMov=null, editCount=null;
+let editingVoucher=null, draft={date:'',narration:'',lines:[]};
+let jeFilter=''; let selectedVouchers = new Set();
+function scrollToPanelTop(panelId){ requestAnimationFrame(()=>{ const p=document.getElementById(panelId); if(p) p.scrollIntoView({behavior:'smooth', block:'start'}); }); }
+
+function shortYear(name){ return (name||'').replace(/^FY\s*/i,''); }
+
+const CODE_PREFIX = {Asset:1, Liability:2, Equity:3, Expense:4, Income:5};
+const DENOMS = [5000,1000,500,100,50,20,10,5,2,1]; // PKR notes & coins, highest to lowest
+function acctCode(acc){
+  const sameType = state.accounts.filter(a=>a.type===acc.type);
+  const i = sameType.findIndex(a=>a.id===acc.id);
+  return String(CODE_PREFIX[acc.type]) + String(i+1).padStart(3,'0');
+}
+
+/* Fix for duplicate wrapper bug on tab switches */
+document.addEventListener('click', ()=>{ document.querySelectorAll('.csel-list.open').forEach(l=>l.classList.remove('open')); });
+/* ---- Audit client helpers: amounts auto-fetch from JV lines tagged to the client; manual override wins when set ---- */
+function auditClientsForYear(){ return state.auditClients.filter(c=>c.yearId===state.currentYearId); }
+const AUDIT_ROLE_LABEL = {exp:'Expense', firm:'Firm Allowance', client:'Client Allowance'};
+function auditTagBadge(l){
+  if(!l.auditClientId || !l.auditRole) return '';
+  const cl = state.auditClients.find(x=>x.id===l.auditClientId);
+  return ` <span class="tag" style="color:var(--gold);border-color:var(--gold)">${cl?cl.clientName:'Client'} · ${AUDIT_ROLE_LABEL[l.auditRole]||''}</span>`;
+}
+function auditClientAmounts(cl){
+  const legs = state.entries.filter(e=>e.auditClientId===cl.id);
+  const sum = role => legs.filter(e=>e.auditRole===role).reduce((s,e)=>s+(e.dr||e.cr||0),0);
+  const auto = {exp:sum('exp'), firm:sum('firm'), client:sum('client')};
+  const ov = {exp:cl.expOverride, firm:cl.firmOverride, client:cl.clientOverride};
+  const isOv = k => ov[k]!==null && ov[k]!==undefined;
+  const val = k => isOv(k) ? ov[k] : auto[k];
+  return {auto, isOv, exp:val('exp'), firm:val('firm'), client:val('client'), net: val('exp') - (val('firm')+val('client'))};
+}
+
+const _closeAllSel = ()=>{ document.querySelectorAll('.csel-list.open').forEach(l=>l.classList.remove('open')); document.querySelectorAll('.csel-btn.open').forEach(b=>b.classList.remove('open')); };
+window.addEventListener('scroll', _closeAllSel, true);
+window.addEventListener('resize', _closeAllSel);
+function enhanceSelect(select){
+  if(!select) return;
+  // header selects are static HTML and get enhanced on every render: unwrap any previous wrapper first so buttons never stack
+  if(select.parentNode && select.parentNode.classList && select.parentNode.classList.contains('csel-wrap')){
+    const oldWrap = select.parentNode; oldWrap.parentNode.insertBefore(select, oldWrap); oldWrap.remove(); select.classList.remove('csel-native');
+  }
+  const wrap = document.createElement('span'); wrap.className='csel-wrap';
+  select.parentNode.insertBefore(wrap, select);
+  wrap.appendChild(select);
+  select.classList.add('csel-native');
+  const btn = document.createElement('button'); btn.type='button'; btn.className='csel-btn';
+  const list = document.createElement('div'); list.className='csel-list';
+  document.body.appendChild(list); // portal: never clipped/hidden by parent overflow or stacking context
+  const sync = ()=>{
+    const opt = select.options[select.selectedIndex];
+    btn.innerHTML = `<span>${opt?opt.textContent:''}</span><span class="csel-arrow">▾</span>`;
+    list.querySelectorAll('.csel-item').forEach(it=>it.classList.toggle('active', it.dataset.value===select.value));
+  };
+  const position = ()=>{
+    const r = btn.getBoundingClientRect();
+    list.style.left = Math.round(r.left)+'px';
+    list.style.top = Math.round(r.bottom+4)+'px';
+    list.style.minWidth = Math.round(r.width)+'px';
+    if(list.getBoundingClientRect().bottom > window.innerHeight){ list.style.top = Math.round(r.top - list.offsetHeight - 4)+'px'; }
+  };
+  const closeList = ()=>{ list.classList.remove('open'); btn.classList.remove('open'); };
+  [...select.options].forEach(opt=>{
+    const item = document.createElement('div'); item.className='csel-item'; item.textContent=opt.textContent; item.dataset.value=opt.value;
+    item.onclick = (e)=>{ e.stopPropagation(); select.value = opt.value; select.dispatchEvent(new Event('change',{bubbles:true})); sync(); closeList(); };
+    list.appendChild(item);
+  });
+  btn.onclick = (e)=>{
+    e.stopPropagation();
+    document.querySelectorAll('.csel-list.open').forEach(l=>{ if(l!==list) l.classList.remove('open'); });
+    document.querySelectorAll('.csel-btn.open').forEach(b2=>{ if(b2!==btn) b2.classList.remove('open'); });
+    const willOpen = !list.classList.contains('open');
+    closeList();
+    if(willOpen){ position(); list.classList.add('open'); btn.classList.add('open'); }
+  };
+  wrap.appendChild(btn);
+  sync();
+}
+
+let _origTitle = document.title;
+window.addEventListener('beforeprint', ()=>{ _origTitle = document.title; document.title = ' '; });
+window.addEventListener('afterprint', ()=>{ document.title = _origTitle; });
+
+function printSingle(innerHtml){
+  const holder = document.getElementById('singlePrintHolder');
+  holder.innerHTML = `<div class="report-head"><div class="co">${pref.companyName||''}</div></div>` + innerHtml;
+  document.body.classList.add('printing-single');
+  showToast("Tip: turn off 'Headers and footers' in the print dialog for a clean PDF.");
+  setTimeout(()=>{ window.print(); setTimeout(()=>{ document.body.classList.remove('printing-single'); holder.innerHTML=''; }, 300); }, 300);
+}
+
+/* ---- Themed modal dialogs (replace native confirm()/alert()) ---- */
+function showConfirm(message){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('modalOverlay');
+    document.getElementById('modalMsg').textContent = message;
+    document.getElementById('modalBtns').innerHTML = `<button class="btn-ghost btn-sm" id="modalCancelBtn">Cancel</button><button class="btn-primary btn-sm" id="modalOkBtn">OK</button>`;
+    const close = (val)=>{ overlay.classList.remove('open'); document.removeEventListener('keydown', onKey); resolve(val); };
+    const onKey = (e)=>{ if(e.key==='Escape') close(false); if(e.key==='Enter') close(true); };
+    document.getElementById('modalOkBtn').onclick = ()=>close(true);
+    document.getElementById('modalCancelBtn').onclick = ()=>close(false);
+    overlay.onclick = (e)=>{ if(e.target===overlay) close(false); };
+    document.addEventListener('keydown', onKey);
+    overlay.classList.add('open');
+    document.getElementById('modalOkBtn').focus();
+  });
+}
+function showAlert(message){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('modalOverlay');
+    document.getElementById('modalMsg').textContent = message;
+    document.getElementById('modalBtns').innerHTML = `<button class="btn-primary btn-sm" id="modalOkBtn">OK</button>`;
+    const close = ()=>{ overlay.classList.remove('open'); document.removeEventListener('keydown', onKey); resolve(); };
+    const onKey = (e)=>{ if(e.key==='Escape'||e.key==='Enter') close(); };
+    document.getElementById('modalOkBtn').onclick = close;
+    overlay.onclick = (e)=>{ if(e.target===overlay) close(); };
+    document.addEventListener('keydown', onKey);
+    overlay.classList.add('open');
+    document.getElementById('modalOkBtn').focus();
+  });
+}
+function showToast(message){
+  let el = document.getElementById('appToast');
+  if(!el){ el = document.createElement('div'); el.id='appToast'; el.className='app-toast'; document.body.appendChild(el); }
+  el.textContent = message; el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+function renderShell(){
+  const brandContainer = document.getElementById('sidebarBrandContainer');
+  if(pref.showBrandSidebar === false){
+    brandContainer.style.display = 'none';
+  } else {
+    brandContainer.style.display = 'block';
+    document.getElementById('sideCoName').textContent = pref.companyName || 'My Business';
+    document.getElementById('sideSubTitle').textContent = pref.subTitleText || 'Books of Account';
+    document.getElementById('sideTag').textContent = pref.tagText || 'Audit Tracker';
+  }
+
+  document.getElementById('lblSettingsBtn').textContent = t('settings');
+  document.getElementById('lblLocalDataNote').textContent = t('localData');
+
+  document.getElementById('navlist').innerHTML = TABS.filter(t=>t[0]!=='settings').map(([id, key])=>
+    `<button data-t="${id}" class="${pref.tab===id?'active':''}"><span class="dot"></span>${t(key)}</button>`).join('');
+  document.querySelectorAll('.navlist button').forEach(b=>b.onclick=()=>{ pref.tab=b.dataset.t; savePref(); renderAll(); });
+  
+  document.getElementById('settingsNavBtn').onclick = ()=>{ pref.tab='settings'; savePref(); renderAll(); };
+
+  const currentTabObj = TABS.find(t=>t[0]===pref.tab);
+  document.getElementById('pageTitle').textContent = currentTabObj ? t(currentTabObj[1]) : '';
+
+  const ys = document.getElementById('yearSel');
+  ys.innerHTML = state.years.map(y=>`<option value="${y.id}" ${state.currentYearId===y.id?'selected':''}>${y.name}</option>`).join('');
+  ys.onchange = ()=>{ state.currentYearId = ys.value; save(); renderAll(); };
+  enhanceSelect(ys);
+
+  const PALETTES = {
+    light: [['light','Ledger'],['slate','Slate'],['forest','Forest']],
+    dark:  [['dark','Ink'],['slate-dark','Slate'],['forest-dark','Forest']]
+  };
+  const DARK_THEMES = ['dark','slate-dark','forest-dark'];
+  const currentMode = DARK_THEMES.includes(pref.theme) ? 'dark' : 'light';
+  document.querySelectorAll('#modeToggle .mode-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.mode===currentMode);
+    b.onclick = ()=>{
+      if(b.dataset.mode===currentMode) return;
+      pref.theme = PALETTES[b.dataset.mode][0][0]; // switch to first palette of the new mode
+      savePref(); applyTheme(); renderAll();
+    };
+  });
+  const ts = document.getElementById('themeSel');
+  ts.innerHTML = PALETTES[currentMode].map(([id,l])=>`<option value="${id}" ${pref.theme===id?'selected':''}>${l}</option>`).join('');
+  ts.onchange = ()=>{ pref.theme=ts.value; savePref(); applyTheme(); };
+  enhanceSelect(ts);
+
+  const ls = document.getElementById('langSel');
+  ls.value = pref.lang || 'en';
+  ls.onchange = ()=>{ pref.lang=ls.value; savePref(); renderAll(); };
+  enhanceSelect(ls);
+
+  document.getElementById('printBtn').textContent = t('exportPdf');
+  document.getElementById('printBtn').onclick = ()=>{
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('print-show'));
+    ['panel-tb','panel-pl','panel-bs','panel-cf','panel-cashbank','panel-audit'].forEach(id=>document.getElementById(id).classList.add('print-show'));
+    showToast("Tip: turn off 'Headers and footers' in the print dialog for a clean PDF.");
+    setTimeout(()=>window.print(),300);
+  };
+}
+
+function applyTheme(){ document.documentElement.setAttribute('data-theme', pref.theme==='light'?'light':pref.theme); }
+
+function renderAll(){
+  document.querySelectorAll('.csel-list').forEach(l=>l.remove()); // clean up old portal dropdown lists before re-rendering
+  applyTheme();
+  renderShell();
+  const p = document.getElementById('panels');
+  p.innerHTML = TABS.map(([id])=>`<div class="panel ${pref.tab===id?'active':''}" id="panel-${id}"></div>`).join('');
+  renderYears(); renderAccounts(); renderJournal(); renderLedgers(); renderTB(); renderPL(); renderBS(); renderCF(); renderCashBank(); renderAudit(); renderSettings();
+}
+
+/* ---------------- Years ---------------- */
+function renderYears(){
+  const el = document.getElementById('panel-years'); const y = editYr;
+  el.innerHTML = `<div class="card"><h3>${y ? t('editYr') : t('addYr')}</h3>
+    <div class="grid yr">
+      <div><label>${t('yrName')}</label><input id="yrName" placeholder="e.g. FY 2025" value="${y?y.name:''}"></div>
+      <div style="align-self:end"><button class="btn-primary" id="yrSaveBtn">${y?t('save'):t('addYr')}</button></div>
+      <div style="align-self:end">${y?`<button class="btn-ghost" id="yrCancelBtn">${t('cancel')}</button>`:''}</div>
+    </div><div id="yrErr" class="err"></div>
+    <p class="small" style="margin-top:8px">Years determine opening/closing balances — add in chronological order.</p></div>
+  <div class="card"><h3>Years (${state.years.length})</h3>
+  <table><thead><tr><th>Name</th><th>Sequence</th><th></th></tr></thead>
+  <tbody>${state.years.map((yr,i)=>`<tr><td>${yr.name}${state.currentYearId===yr.id?' <span class="tag" style="color:var(--gold);border-color:var(--gold)">active</span>':''}</td>
+  <td class="small">${i+1}</td><td class="btn-group">
+  <button class="rowbtn" data-up="${yr.id}" title="Move earlier" ${i===0?'disabled':''}>↑</button>
+  <button class="rowbtn" data-down="${yr.id}" title="Move later" ${i===state.years.length-1?'disabled':''}>↓</button>
+  <button class="rowbtn" data-e="${yr.id}" title="Edit">${t('edit')}</button>
+  <button class="rowbtn danger" data-d="${yr.id}" title="Delete">${t('delete')}</button></td></tr>`).join('')}</tbody></table></div>`;
+  el.querySelector('#yrSaveBtn').onclick = ()=>{
+    const name = el.querySelector('#yrName').value.trim(); const err = el.querySelector('#yrErr'); err.textContent='';
+    if(!name){ err.textContent='Year name required.'; return; }
+    if(state.years.some(x=>x.name.toLowerCase()===name.toLowerCase() && x.id!==(y&&y.id))){ err.textContent='Name already exists.'; return; }
+    if(y){ y.name=name; } else { const id=uid(); state.years.push({id,name}); state.currentYearId=id; }
+    editYr=null; save(); renderAll();
+  };
+  const cb = el.querySelector('#yrCancelBtn'); if(cb) cb.onclick=()=>{ editYr=null; renderAll(); };
+  el.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{
+    const i = state.years.findIndex(y=>y.id===b.dataset.up); if(i<=0) return;
+    [state.years[i-1], state.years[i]] = [state.years[i], state.years[i-1]]; save(); renderAll();
+  });
+  el.querySelectorAll('[data-down]').forEach(b=>b.onclick=()=>{
+    const i = state.years.findIndex(y=>y.id===b.dataset.down); if(i>=state.years.length-1) return;
+    [state.years[i+1], state.years[i]] = [state.years[i], state.years[i+1]]; save(); renderAll();
+  });
+  el.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{ editYr=state.years.find(x=>x.id===b.dataset.e); renderAll(); scrollToPanelTop('panel-years'); });
+  el.querySelectorAll('[data-d]').forEach(b=>b.onclick=async ()=>{
+    const id=b.dataset.d;
+    if(state.entries.some(e=>e.yearId===id)){ await showAlert('Entries exist in this year. Delete or move them first.'); return; }
+    if(!(await showConfirm('Delete this year?'))) return;
+    state.years = state.years.filter(x=>x.id!==id);
+    if(state.currentYearId===id) state.currentYearId = state.years[state.years.length-1]?.id || null;
+    save(); renderAll();
+  });
+}
+
+/* ---------------- Chart of Accounts ---------------- */
+function upsertAccount(data, err){
+  if(!data.name){ err('Account name required.'); return false; }
+  const dup = state.accounts.find(a=>a.name.toLowerCase()===data.name.toLowerCase() && a.id!==(editAcc&&editAcc.id));
+  if(dup){ err('Account already exists.'); return false; }
+  if(editAcc){ Object.assign(editAcc, data); } else { state.accounts.push({id:uid(), ...data}); }
+  return true;
+}
+
+function renderAccounts(){
+  const el = document.getElementById('panel-accounts'); const a = editAcc;
+  el.innerHTML = `<div class="card"><h3>${a?'Edit Account':'Add Account'}</h3>
+    <div class="grid acc">
+      <div><label>Account Name</label><input id="accName" value="${a?a.name:''}"></div>
+      <div><label>Type</label><select id="accType">${TYPES.map(t=>`<option ${a&&a.type===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div><label>Cash/Bank?</label><select id="accCash"><option value="0" ${a&&!a.isCash?'selected':''}>No</option><option value="1" ${a&&a.isCash?'selected':''}>Yes</option></select></div>
+      <div id="cfWrap"><label>Cash Flow Category</label><select id="accCf">${CF_CATS.map(c=>`<option ${a&&a.cf===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div style="align-self:end"><button class="btn-primary" id="addAccBtn" style="width:100%">${a?t('save'):t('add')}</button></div>
+      <div style="align-self:end">${a?`<button class="btn-ghost" id="accCancelBtn">${t('cancel')}</button>`:''}</div>
+    </div><div id="accErr" class="err"></div></div>
+  <div class="card">
+    <h3>Import / Export Accounts CSV</h3>
+    <div class="import-row">
+      <input type="file" id="accCsvFile" accept=".csv">
+      <button class="btn-ghost btn-sm" id="importAccBtn">Upload & Import Accounts CSV</button>
+      <button class="btn-ghost btn-sm" id="exportAccBtn">Export Accounts CSV</button>
+    </div>
+    <p class="small">CSV headers (case-insensitive): <code>Name, Type, IsCash, CFCategory</code></p>
+    <div id="accCsvMsg" class="msg"></div>
+  </div>
+  <div class="card"><h3>Accounts (${state.accounts.length})</h3><div id="accTableWrap"></div></div>`;
+
+  const cashSel = el.querySelector('#accCash'), cfWrap = el.querySelector('#cfWrap');
+  const toggleCf = ()=> cfWrap.style.display = cashSel.value==='1' ? 'none':'block'; toggleCf(); cashSel.onchange = toggleCf;
+  enhanceSelect(el.querySelector('#accType')); enhanceSelect(cashSel); enhanceSelect(el.querySelector('#accCf'));
+  el.querySelector('#addAccBtn').onclick = ()=>{
+    const err = m=>el.querySelector('#accErr').textContent=m; err('');
+    const isCash = el.querySelector('#accCash').value==='1';
+    const ok = upsertAccount({ name: el.querySelector('#accName').value.trim(), type: el.querySelector('#accType').value,
+      isCash, cf: isCash?null:el.querySelector('#accCf').value }, err);
+    if(ok){ editAcc=null; save(); renderAll(); }
+  };
+  const cb = el.querySelector('#accCancelBtn'); if(cb) cb.onclick=()=>{ editAcc=null; renderAll(); };
+
+  el.querySelector('#exportAccBtn').onclick = ()=>{
+    const rows = [['name','type','isCash','cf'], ...state.accounts.map(a=>[a.name, a.type, a.isCash?'1':'0', a.cf||''])];
+    downloadCSV(rows, 'chart_of_accounts.csv');
+  };
+
+  el.querySelector('#importAccBtn').onclick = ()=>{
+    const file = el.querySelector('#accCsvFile').files[0];
+    const msg = el.querySelector('#accCsvMsg'); msg.textContent='';
+    if(!file){ msg.className='msg err'; msg.textContent='Please select a CSV file first.'; return; }
+    Papa.parse(file, { header:true, skipEmptyLines:true, transformHeader:h=>h.trim().toLowerCase(), complete:(res)=>{
+      let added=0, skipped=0;
+      res.data.forEach(row=>{
+        const name = (row.name||'').trim();
+        const typeRaw = (row.type||'').trim();
+        const type = TYPES.find(t=>t.toLowerCase()===typeRaw.toLowerCase());
+        if(!name || !type){ skipped++; return; }
+        const isCashRaw = String(row.iscash||'').trim().toLowerCase();
+        const isCash = ['1','y','yes','true'].includes(isCashRaw);
+        const cfRaw = (row.cf || row.cfcategory || '').trim();
+        const cf = CF_CATS.find(c=>c.toLowerCase()===cfRaw.toLowerCase()) || 'Operating';
+        if(upsertAccount({ name, type, isCash, cf: isCash?null:cf }, ()=>{})){ added++; } else { skipped++; }
+      });
+      save(); renderAll();
+      msg.className='msg ok'; msg.textContent=`Import finished: ${added} added, ${skipped} skipped/duplicate.`;
+    }});
+  };
+
+  const wrap = el.querySelector('#accTableWrap');
+  if(!state.accounts.length){ wrap.innerHTML=`<p class="empty">${t('noAcc')}</p>`; return; }
+  wrap.innerHTML = `<table><thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Cash?</th><th>CF Cat.</th><th class="num">Balance ${getHeaderUnitNote()}</th><th></th></tr></thead>
+  <tbody>${state.accounts.map(ac=>{ const b=balanceFor(ac, selIdx());
+    return `<tr><td><span class="code-badge">${acctCode(ac)}</span></td><td>${ac.name}</td><td><span class="tag ${ac.type}">${ac.type}</span></td><td>${ac.isCash?'Yes':'—'}</td><td>${ac.isCash?'—':ac.cf}</td>
+    <td class="num">${fmt(b.net)}</td><td class="btn-group"><button class="rowbtn" data-e="${ac.id}" title="Edit">${t('edit')}</button>
+    <button class="rowbtn danger" data-d="${ac.id}" title="Delete">${t('delete')}</button></td></tr>`; }).join('')}</tbody></table>`;
+  wrap.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{ editAcc=accById(b.dataset.e); renderAll(); scrollToPanelTop('panel-accounts'); });
+  wrap.querySelectorAll('[data-d]').forEach(b=>b.onclick=async ()=>{
+    const id=b.dataset.d;
+    if(state.entries.some(e=>e.accId===id)){ await showAlert('Entries exist for this account. Delete them first.'); return; }
+    if(!(await showConfirm('Delete this account?'))) return;
+    state.accounts = state.accounts.filter(x=>x.id!==id); save(); renderAll();
+  });
+}
+
+/* ---------------- Journal Vouchers ---------------- */
+function vouchersForYear(idx){
+  const legs = entriesIn(idx); const map = new Map();
+  legs.forEach(l=>{ if(!map.has(l.voucher)) map.set(l.voucher, {voucher:l.voucher, date:l.date, narration:l.narration, legs:[]}); map.get(l.voucher).legs.push(l); });
+  return [...map.values()].sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+function renderJournal(){
+  const el = document.getElementById('panel-journal'); const idx = selIdx();
+  const opts = state.accounts.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+  el.innerHTML = `<div class="card"><h3>${editingVoucher?'Edit Voucher '+editingVoucher:'New Journal Voucher'} <span class="small">${state.years[idx]?.name||''}</span></h3>
+  ${!state.accounts.length ? `<p class="empty">${t('noAcc')}</p>` : `
+  <div class="grid" style="grid-template-columns:160px 1fr">
+    <div><label>Date</label><input type="date" id="vDate" value="${draft.date||new Date().toISOString().slice(0,10)}"></div>
+    <div><label>Narration</label><input id="vNar" value="${draft.narration||''}"></div>
+  </div>
+  <div class="grid" style="grid-template-columns:1fr 120px 140px auto;margin-top:10px">
+    <div><label>Account</label><select id="lnAcc">${opts}</select></div>
+    <div><label>Dr / Cr</label><select id="lnSide"><option value="dr">Debit</option><option value="cr">Credit</option></select></div>
+    <div><label>Amount</label><input type="number" step="0.01" id="lnAmt"></div>
+    <div style="align-self:end"><button class="btn-ghost" id="addLineBtn" style="width:100%">+ Add Line</button></div>
+  </div>
+  <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:8px;max-width:520px">
+    <div><label>Audit Client (optional)</label><select id="lnClient"><option value="">None</option>${auditClientsForYear().map(c=>`<option value="${c.id}">${c.clientName}</option>`).join('')}</select></div>
+    <div><label>Tag as</label><select id="lnRole"><option value="exp">My Expense</option><option value="firm">Firm Allowance</option><option value="client">Client Allowance</option></select></div>
+  </div>
+  <div id="draftLinesWrap" style="margin-top:12px"></div>
+  <div id="vTotals" style="margin-top:8px"></div>
+  <div style="margin-top:10px;display:flex;gap:8px">
+    <button class="btn-primary" id="postVBtn">${editingVoucher?'Save Voucher':'Post Voucher'}</button>
+    <button class="btn-ghost" id="cancelVBtn">${editingVoucher?'Cancel Edit':'Clear'}</button>
+  </div>`}<div id="vErr" class="err"></div></div>
+  <div class="card">
+    <h3>Import / Export Journal Entries CSV</h3>
+    <div class="import-row">
+      <input type="file" id="jeCsvFile" accept=".csv">
+      <button class="btn-ghost btn-sm" id="importJeBtn">Upload & Import Vouchers CSV</button>
+      <button class="btn-ghost btn-sm" id="exportJeBtn">Export Vouchers CSV</button>
+    </div>
+    <div id="jeCsvMsg" class="msg"></div>
+  </div>
+  <div class="card">
+    <h3>Vouchers — ${vouchersForYear(idx).length} in this year</h3>
+    <div class="searchbar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <input id="jeSearch" placeholder="Search voucher # or narration..." value="${jeFilter}">
+      <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted);text-transform:none;font-weight:400"><input type="checkbox" id="selAllChk" style="width:auto"> Select all</label>
+      <button class="rowbtn danger" id="bulkDeleteBtn" disabled>Delete Selected (<span id="selCount">0</span>)</button>
+      <button class="btn-ghost btn-sm" id="renumberBtn" style="margin-left:auto">Renumber Vouchers (1, 2, 3…)</button>
+      <button class="btn-ghost btn-sm" id="clearYearBtn">Clear all entries in this year</button>
+    </div>
+    <div id="voucherListWrap"></div>
+  </div>`;
+
+  if(state.accounts.length){
+    const renderLines = ()=>{
+      const w = el.querySelector('#draftLinesWrap');
+      if(!draft.lines.length){ w.innerHTML='<p class="empty">No lines added yet. Minimum 2 lines required.</p>'; }
+      else { w.innerHTML = `<table><thead><tr><th>Account</th><th class="num">Debit ${getHeaderUnitNote()}</th><th class="num">Credit ${getHeaderUnitNote()}</th><th></th></tr></thead>
+        <tbody>${draft.lines.map((l,i)=>`<tr><td>${accById(l.accId)?.name||'—'}${auditTagBadge(l)}</td><td class="num">${l.dr?fmt(l.dr):''}</td>
+        <td class="num">${l.cr?fmt(l.cr):''}</td><td><button class="rowbtn danger" data-i="${i}">Remove</button></td></tr>`).join('')}</tbody></table>`;
+        w.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ draft.lines.splice(parseInt(b.dataset.i),1); renderLines(); renderTotals(); }); }
+    };
+    const renderTotals = ()=>{
+      const totDr = draft.lines.reduce((s,l)=>s+l.dr,0), totCr = draft.lines.reduce((s,l)=>s+l.cr,0);
+      const bal = Math.abs(totDr-totCr)<0.005;
+      el.querySelector('#vTotals').innerHTML = `<div class="stat-row" style="margin-bottom:0">
+        <div class="stat"><div class="l">Total Debit</div><div class="v">${fmt(totDr)}</div></div>
+        <div class="stat"><div class="l">Total Credit</div><div class="v">${fmt(totCr)}</div></div>
+        <div class="stat" style="border-left-color:${bal?'var(--good)':'var(--bad)'}"><div class="l">Difference</div><div class="v" style="color:${bal?'var(--good)':'var(--bad)'}">${fmt(totDr-totCr)}</div></div></div>`;
+    };
+    renderLines(); renderTotals();
+    enhanceSelect(el.querySelector('#lnAcc')); enhanceSelect(el.querySelector('#lnSide')); enhanceSelect(el.querySelector('#lnClient')); enhanceSelect(el.querySelector('#lnRole'));
+    el.querySelector('#addLineBtn').onclick = ()=>{
+      const accId = el.querySelector('#lnAcc').value, side = el.querySelector('#lnSide').value, amt = parseFloat(el.querySelector('#lnAmt').value);
+      const err = m=>el.querySelector('#vErr').textContent=m; err('');
+      if(!accId){ err('Select an account.'); return; }
+      if(!amt || amt<=0){ err('Enter valid amount.'); return; }
+      draft.date = el.querySelector('#vDate').value; draft.narration = el.querySelector('#vNar').value;
+      const auditClientId = el.querySelector('#lnClient').value || null; const auditRole = auditClientId ? el.querySelector('#lnRole').value : null;
+      draft.lines.push({accId, dr: side==='dr'?amt:0, cr: side==='cr'?amt:0, auditClientId, auditRole});
+      el.querySelector('#lnAmt').value=''; renderLines(); renderTotals();
+    };
+    el.querySelector('#postVBtn').onclick = ()=>{
+      draft.date = el.querySelector('#vDate').value; draft.narration = el.querySelector('#vNar').value;
+      const err = m=>el.querySelector('#vErr').textContent=m; err('');
+      if(!draft.date){ err('Date required.'); return; }
+      if(draft.lines.length<2){ err('At least 2 lines required.'); return; }
+      const totDr = draft.lines.reduce((s,l)=>s+l.dr,0), totCr = draft.lines.reduce((s,l)=>s+l.cr,0);
+      if(Math.abs(totDr-totCr)>0.005){ err('Unbalanced voucher: Total Debit must equal Total Credit.'); return; }
+      const voucher = editingVoucher || nextVoucherNo(idx);
+      if(editingVoucher) state.entries = state.entries.filter(e=>e.voucher!==editingVoucher);
+      draft.lines.forEach(l=> state.entries.push({id:uid(), yearId: state.currentYearId, date: draft.date, voucher, accId:l.accId, dr:l.dr, cr:l.cr, narration: draft.narration, auditClientId:l.auditClientId||null, auditRole:l.auditRole||null}));
+      draft={date:'',narration:'',lines:[]}; editingVoucher=null; save(); renderAll();
+    };
+    el.querySelector('#cancelVBtn').onclick = ()=>{ draft={date:'',narration:'',lines:[]}; editingVoucher=null; renderAll(); };
+  }
+
+  el.querySelector('#exportJeBtn').onclick = ()=>{
+    const curEntries = entriesIn(idx);
+    const rows = [['Year','Date','Voucher','Account','Debit','Credit','Narration'],
+      ...curEntries.map(e=>[state.years[idx]?.name||'', e.date, e.voucher, accById(e.accId)?.name||'', e.dr||'', e.cr||'', e.narration||''])];
+    downloadCSV(rows, `journal_entries_${state.years[idx]?.name||'export'}.csv`);
+  };
+
+  el.querySelector('#importJeBtn').onclick = ()=>{
+    const file = el.querySelector('#jeCsvFile').files[0];
+    const msg = el.querySelector('#jeCsvMsg'); msg.textContent='';
+    if(!file){ msg.className='msg err'; msg.textContent='Please select a CSV file first.'; return; }
+    Papa.parse(file, { header:true, skipEmptyLines:true, transformHeader:h=>h.trim().toLowerCase(), complete:(res)=>{
+      const groups = new Map();
+      res.data.forEach(row=>{
+        const yr = (row.year||'').trim();
+        const vRaw = (row.voucher||'').trim();
+        const dt = (row.date||'').trim();
+        const nar = (row.narration||'').trim();
+        const key = yr+'||'+(vRaw || (dt+'|'+nar));
+        if(!groups.has(key)) groups.set(key, {yr, vRaw, date:dt, narration:nar, rows:[]});
+        groups.get(key).rows.push(row);
+      });
+      let addedV=0, addedL=0, skipped=0;
+      groups.forEach(g=>{
+        let yObj = g.yr ? state.years.find(y=>y.name.toLowerCase()===g.yr.toLowerCase()) : state.years.find(y=>y.id===state.currentYearId);
+        if(g.yr && !yObj){ yObj={id:uid(),name:g.yr}; state.years.push(yObj); }
+        let ok=true, legs=[], sd=0, sc=0;
+        g.rows.forEach(row=>{
+          const accName = (row.account||'').trim();
+          const acc = state.accounts.find(a=>a.name.toLowerCase()===accName.toLowerCase());
+          const d = parseFloat(row.debit || row.dr) || 0;
+          const c = parseFloat(row.credit || row.cr) || 0;
+          if(!acc || (!d && !c) || !g.date){ ok=false; return; }
+          legs.push({accId:acc.id, dr:d, cr:c}); sd+=d; sc+=c;
+        });
+        if(!ok || !yObj || legs.length<1 || Math.abs(sd-sc)>0.005){ skipped += g.rows.length; return; }
+        const voucher = g.vRaw || uid();
+        legs.forEach(l=> state.entries.push({id:uid(), yearId:yObj.id, date:g.date, voucher, accId:l.accId, dr:l.dr, cr:l.cr, narration:g.narration}));
+        addedV++; addedL+=legs.length;
+      });
+      save(); renderAll();
+      msg.className='msg ok'; msg.textContent=`Import finished: ${addedV} voucher(s) / ${addedL} line(s) imported.`;
+    }});
+  };
+
+  const sInput = el.querySelector('#jeSearch');
+  if(sInput){ sInput.oninput = ()=>{ jeFilter = sInput.value; renderVoucherList(el, idx); }; }
+  el.querySelector('#selAllChk').onchange = (ev)=>{
+    const list = vouchersForYear(idx).filter(v=> !jeFilter.trim() || matchesFilter(v, jeFilter));
+    if(ev.target.checked) list.forEach(v=>selectedVouchers.add(v.voucher)); else selectedVouchers.clear();
+    renderVoucherList(el, idx);
+  };
+  el.querySelector('#renumberBtn').onclick = async ()=>{
+    const vList = vouchersForYear(idx);
+    if(!vList.length) return;
+    if(!(await showConfirm(`Renumber all ${vList.length} voucher(s) in this year to start from JV-0001 (in date order)?`))) return;
+    const sorted = [...vList].sort((a,b)=> a.date.localeCompare(b.date) || a.voucher.localeCompare(b.voucher));
+    const map = new Map();
+    sorted.forEach((v,i)=> map.set(v.voucher, 'JV-'+String(i+1).padStart(4,'0')));
+    state.entries.forEach(e=>{ if(yearIdx(e.yearId)===idx && map.has(e.voucher)) e.voucher = map.get(e.voucher); });
+    save(); renderAll(); showToast('Vouchers renumbered.');
+  };
+  el.querySelector('#clearYearBtn').onclick = async ()=>{
+    const list = vouchersForYear(idx);
+    if(!list.length) return;
+    if(!(await showConfirm('Are you sure you want to clear all entries in this year?'))) return;
+    state.entries = state.entries.filter(e=>yearIdx(e.yearId)!==idx);
+    selectedVouchers.clear(); save(); renderAll();
+  };
+  el.querySelector('#bulkDeleteBtn').onclick = async ()=>{
+    if(!selectedVouchers.size) return;
+    if(!(await showConfirm('Delete selected vouchers?'))) return;
+    state.entries = state.entries.filter(e=>!selectedVouchers.has(e.voucher));
+    selectedVouchers.clear(); save(); renderAll();
+  };
+
+  renderVoucherList(el, idx);
+}
+
+function matchesFilter(v, q){ q=q.toLowerCase(); return v.voucher.toLowerCase().includes(q) || (v.narration&&v.narration.toLowerCase().includes(q)) || v.legs.some(l=>(accById(l.accId)?.name||'').toLowerCase().includes(q)); }
+
+function renderVoucherList(el, idx){
+  const wrap = el.querySelector('#voucherListWrap');
+  let list = vouchersForYear(idx);
+  if(jeFilter.trim()) list = list.filter(v=>matchesFilter(v, jeFilter));
+  const selCountEl = el.querySelector('#selCount'), bulkBtn = el.querySelector('#bulkDeleteBtn'), selAllChk = el.querySelector('#selAllChk');
+  const visibleVouchers = new Set(list.map(v=>v.voucher));
+  [...selectedVouchers].forEach(v=>{ if(!visibleVouchers.has(v)) selectedVouchers.delete(v); });
+  if(selCountEl) selCountEl.textContent = selectedVouchers.size;
+  if(bulkBtn) bulkBtn.disabled = selectedVouchers.size===0;
+  if(selAllChk) selAllChk.checked = list.length>0 && list.every(v=>selectedVouchers.has(v.voucher));
+  if(!list.length){ wrap.innerHTML=`<p class="empty">${t('noEntries')}</p>`; return; }
+  wrap.innerHTML = list.map(v=>{
+    const totDr = v.legs.reduce((s,l)=>s+l.dr,0);
+    return `<div class="voucher-block"><div class="vhead"><span style="display:flex;align-items:center;gap:8px">
+    <input type="checkbox" class="vchk" data-v="${v.voucher}" style="width:auto" ${selectedVouchers.has(v.voucher)?'checked':''}>
+    <span class="vid">${v.voucher}</span> · ${v.date} ${v.narration?'— '+v.narration:''}</span>
+    <span class="btn-group"><button class="rowbtn" data-pdf="${v.voucher}">PDF</button><button class="rowbtn" data-xls="${v.voucher}">Excel</button><button class="rowbtn" data-e="${v.voucher}" title="Edit">${t('edit')}</button><button class="rowbtn danger" data-d="${v.voucher}" title="Delete">${t('delete')}</button></span></div>
+    <table>
+      <thead><tr><th>Account</th><th class="num">Debit ${getHeaderUnitNote()}</th><th class="num">Credit ${getHeaderUnitNote()}</th></tr></thead>
+      <tbody>${v.legs.map(l=>`<tr><td>${accById(l.accId)?.name||'—'}${auditTagBadge(l)}</td><td class="num">${l.dr?fmt(l.dr):''}</td><td class="num">${l.cr?fmt(l.cr):''}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td>${t('total')}</td><td class="num">${fmt(totDr)}</td><td class="num">${fmt(totDr)}</td></tr></tfoot>
+    </table></div>`;
+  }).join('');
+  wrap.querySelectorAll('[data-pdf]').forEach(b=>b.onclick=()=>{
+    const v = list.find(x=>x.voucher===b.dataset.pdf);
+    const totDr = v.legs.reduce((s,l)=>s+l.dr,0);
+    const html = `<div class="report-head"><div class="title">Journal Voucher ${v.voucher}</div><div class="sub">${v.date}${v.narration?' — '+v.narration:''}</div></div>
+    <table><thead><tr><th>Account</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead>
+    <tbody>${v.legs.map(l=>`<tr><td>${accById(l.accId)?.name||'—'}</td><td class="num">${l.dr?fmt(l.dr):''}</td><td class="num">${l.cr?fmt(l.cr):''}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td>Total</td><td class="num">${fmt(totDr)}</td><td class="num">${fmt(totDr)}</td></tr></tfoot></table>`;
+    printSingle(html);
+  });
+  wrap.querySelectorAll('[data-xls]').forEach(b=>b.onclick=()=>{
+    const v = list.find(x=>x.voucher===b.dataset.xls);
+    const out = [['Voucher',v.voucher],['Date',v.date],['Narration',v.narration||''],[],['Account','Debit','Credit'],
+      ...v.legs.map(l=>[accById(l.accId)?.name||'—', l.dr?l.dr.toFixed(2):'', l.cr?l.cr.toFixed(2):''])];
+    downloadCSV(out, `voucher_${v.voucher}.csv`);
+  });
+  wrap.querySelectorAll('.vchk').forEach(c=>c.onchange=()=>{
+    if(c.checked) selectedVouchers.add(c.dataset.v); else selectedVouchers.delete(c.dataset.v);
+    if(selCountEl) selCountEl.textContent = selectedVouchers.size;
+    if(bulkBtn) bulkBtn.disabled = selectedVouchers.size===0;
+    if(selAllChk) selAllChk.checked = list.length>0 && list.every(v=>selectedVouchers.has(v.voucher));
+  });
+  wrap.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{
+    const v = state.entries.filter(e=>e.voucher===b.dataset.e);
+    editingVoucher = b.dataset.e; draft = { date:v[0].date, narration:v[0].narration, lines: v.map(l=>({accId:l.accId,dr:l.dr,cr:l.cr,auditClientId:l.auditClientId||null,auditRole:l.auditRole||null})) };
+    renderAll(); scrollToPanelTop('panel-journal');
+  });
+  wrap.querySelectorAll('[data-d]').forEach(b=>b.onclick=async ()=>{
+    if(!(await showConfirm('Delete this voucher?'))) return;
+    state.entries = state.entries.filter(e=>e.voucher!==b.dataset.d); selectedVouchers.delete(b.dataset.d); save(); renderAll();
+  });
+}
+
+/* ---------------- Ledgers ---------------- */
+function counterparties(leg){
+  const others = state.entries.filter(e=>e.voucher===leg.voucher && e.id!==leg.id);
+  if(!others.length) return '—';
+  if(others.length<=2) return others.map(o=>accById(o.accId)?.name||'—').join(', ');
+  return 'Multiple ('+others.length+')';
+}
+let ledgerFilter='';
+function ledgerCardData(a, idx){
+  const rows = entriesIn(idx).filter(e=>e.accId===a.id).sort((x,y)=>x.date.localeCompare(y.date));
+  const opening = isPL(a) ? 0 : (idx>0 ? calcBalance(a, entriesUpTo(idx-1)).net : 0);
+  let running = opening;
+  const dataRows = rows.map(e=>{ const delta = normalIsDebit(a.type) ? (e.dr-e.cr) : (e.cr-e.dr); running += delta;
+    return {date:e.date, against:counterparties(e), dr:e.dr, cr:e.cr, bal:running}; });
+  const closing = balanceFor(a, idx).net;
+  return {rows:dataRows, opening, closing};
+}
+function renderLedgers(){
+  const el = document.getElementById('panel-ledgers'); const idx = selIdx();
+  if(!state.accounts.length){ el.innerHTML=`<div class="card"><p class="empty">${t('noAcc')}</p></div>`; return; }
+  el.innerHTML = `<div class="report-head">
+    <div class="co">${pref.companyName||''}</div>
+    <div class="title">${t('ledgers')}</div>
+    <div class="sub">${shortYear(state.years[idx]?.name)||''}</div>
+    <div class="unit-note" style="font-size:11px;color:var(--muted);font-style:italic;margin-top:4px">${getHeaderUnitNote()}</div>
+  </div>
+  <div class="searchbar no-print" style="margin-bottom:14px"><input id="ledgerSearch" placeholder="Search by account name or code…" value="${ledgerFilter}"></div>
+  <div id="ledgerCardsWrap"></div>`;
+  el.querySelector('#ledgerSearch').oninput = (ev)=>{ ledgerFilter = ev.target.value; renderLedgerCards(idx); };
+  renderLedgerCards(idx);
+}
+function renderLedgerCards(idx){
+  const wrap = document.getElementById('ledgerCardsWrap'); if(!wrap) return;
+  let list = state.accounts;
+  if(ledgerFilter.trim()){ const q=ledgerFilter.toLowerCase(); list = list.filter(a=>a.name.toLowerCase().includes(q) || acctCode(a).includes(q)); }
+  const cards = list.map(a=>{
+    const {rows, opening, closing} = ledgerCardData(a, idx);
+    if(!rows.length && opening===0) return '';
+    const tableHtml = `<table><thead><tr><th>Date</th><th>Against</th><th class="num">${t('dr')}</th><th class="num">${t('cr')}</th><th class="num">${t('balance')}</th></tr></thead>
+    <tbody>${!isPL(a) ? `<tr><td colspan="4">Balance brought forward</td><td class="num">${fmt(opening)}</td></tr>`:''}
+    ${rows.map(r=>`<tr><td>${r.date}</td><td>${r.against}</td><td class="num">${r.dr?fmt(r.dr):''}</td><td class="num">${r.cr?fmt(r.cr):''}</td><td class="num">${fmt(r.bal)}</td></tr>`).join('')}</tbody></table>`;
+    return `<div class="card"><h3><span><span class="code-badge">${acctCode(a)}</span>${a.name} <span class="tag ${a.type}">${a.type} · Closing ${fmt(closing)}</span></span>
+    <span class="controls no-print"><button class="rowbtn" data-pdf="${a.id}">PDF</button><button class="rowbtn" data-xls="${a.id}">Excel</button></span></h3>
+    ${tableHtml}</div>`;
+  }).join('');
+  wrap.innerHTML = cards || `<div class="card"><p class="empty">${t('noEntries')}</p></div>`;
+  wrap.querySelectorAll('[data-pdf]').forEach(b=>b.onclick=()=>{
+    const a = accById(b.dataset.pdf); const idxN = selIdx(); const {rows, opening, closing} = ledgerCardData(a, idxN);
+    const html = `<div class="report-head"><div class="title">${acctCode(a)} · ${a.name}</div><div class="sub">${a.type} — ${shortYear(state.years[idxN]?.name)||''}</div></div>
+    <table><thead><tr><th>Date</th><th>Against</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Balance</th></tr></thead>
+    <tbody>${!isPL(a) ? `<tr><td colspan="4">Balance brought forward</td><td class="num">${fmt(opening)}</td></tr>`:''}
+    ${rows.map(r=>`<tr><td>${r.date}</td><td>${r.against}</td><td class="num">${r.dr?fmt(r.dr):''}</td><td class="num">${r.cr?fmt(r.cr):''}</td><td class="num">${fmt(r.bal)}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="4">Closing Balance</td><td class="num">${fmt(closing)}</td></tr></tfoot></table>`;
+    printSingle(html);
+  });
+  wrap.querySelectorAll('[data-xls]').forEach(b=>b.onclick=()=>{
+    const a = accById(b.dataset.xls); const idxN = selIdx(); const {rows, opening, closing} = ledgerCardData(a, idxN);
+    const out = [['Date','Against','Debit','Credit','Balance']];
+    if(!isPL(a)) out.push(['','Balance brought forward','','',opening.toFixed(2)]);
+    rows.forEach(r=>out.push([r.date, r.against, r.dr?r.dr.toFixed(2):'', r.cr?r.cr.toFixed(2):'', r.bal.toFixed(2)]));
+    out.push(['','Closing Balance','','',closing.toFixed(2)]);
+    downloadCSV(out, `ledger_${acctCode(a)}_${a.name.replace(/[^a-z0-9]+/gi,'_')}.csv`);
+  });
+}
+
+/* ---------------- Trial Balance ---------------- */
+function cumulativeRetained(uptoIdx){ let s=0; for(let i=0;i<=uptoIdx;i++) s+=plFor(i).net; return s; }
+function tbRowsData(idx){
+  const priorRetained = idx > 0 ? cumulativeRetained(idx - 1) : 0;
+  const rows = [];
+  if(Math.abs(priorRetained) > 0.005){
+    const openDr = priorRetained<0?Math.abs(priorRetained):0, openCr = priorRetained>0?priorRetained:0;
+    rows.push({name:'Retained Earnings (B/F)', code:'', type:'Equity', openDr, openCr, perDr:0, perCr:0, closeDr:openDr, closeCr:openCr});
+  }
+  state.accounts.forEach(a=>{
+    const openNet = isPL(a) ? 0 : (idx>0 ? calcBalance(a, entriesUpTo(idx-1)).net : 0);
+    const period = calcBalance(a, entriesIn(idx));
+    const closeNet = balanceFor(a, idx).net;
+    const openDr = normalIsDebit(a.type)?Math.max(openNet,0):Math.max(-openNet,0);
+    const openCr = normalIsDebit(a.type)?Math.max(-openNet,0):Math.max(openNet,0);
+    const closeDr = normalIsDebit(a.type)?Math.max(closeNet,0):Math.max(-closeNet,0);
+    const closeCr = normalIsDebit(a.type)?Math.max(-closeNet,0):Math.max(closeNet,0);
+    if(!openDr && !openCr && !period.dr && !period.cr && !closeDr && !closeCr) return;
+    rows.push({name:a.name, code:acctCode(a), type:a.type, openDr, openCr, perDr:period.dr, perCr:period.cr, closeDr, closeCr});
+  });
+  return rows;
+}
+function renderTB(){
+  const el = document.getElementById('panel-tb'); const idx = selIdx();
+  const rows = tbRowsData(idx);
+  const totDr = rows.reduce((s,r)=>s+r.closeDr,0), totCr = rows.reduce((s,r)=>s+r.closeCr,0);
+  const balanced = Math.abs(totDr-totCr) < 0.005;
+  const view = pref.tbView === '6col' ? '6col' : '2col';
+
+  const tableBody = !rows.length ? `<p class="empty">${t('noEntries')}</p>` : (view==='2col' ? `
+      <table class="tb-table">
+        <thead><tr><th>Code</th><th>Account</th><th>Type</th><th class="num">${t('dr')}</th><th class="num">${t('cr')}</th></tr></thead>
+        <tbody>
+          <tr class="unit-row"><td colspan="5">${getHeaderUnitNote()}</td></tr>
+          ${rows.map(r=>`<tr><td><span class="code-badge">${r.code}</span></td><td>${r.name}</td><td><span class="tag ${r.type}">${r.type}</span></td><td class="num">${r.closeDr?fmt(r.closeDr):''}</td><td class="num">${r.closeCr?fmt(r.closeCr):''}</td></tr>`).join('')}
+        </tbody>
+        <tfoot><tr><td colspan="3">${t('total')}</td><td class="num">${fmt(totDr)}</td><td class="num">${fmt(totCr)}</td></tr></tfoot>
+      </table>` : `
+      <table class="tb-table" style="font-size:13px">
+        <thead><tr><th>Code</th><th>Account</th><th class="num">Opening Dr</th><th class="num">Opening Cr</th><th class="num">Period Dr</th><th class="num">Period Cr</th><th class="num">Closing Dr</th><th class="num">Closing Cr</th></tr></thead>
+        <tbody>
+          <tr class="unit-row"><td colspan="8">${getHeaderUnitNote()}</td></tr>
+          ${rows.map(r=>`<tr><td><span class="code-badge">${r.code}</span></td><td>${r.name}</td><td class="num">${r.openDr?fmt(r.openDr):''}</td><td class="num">${r.openCr?fmt(r.openCr):''}</td><td class="num">${r.perDr?fmt(r.perDr):''}</td><td class="num">${r.perCr?fmt(r.perCr):''}</td><td class="num">${r.closeDr?fmt(r.closeDr):''}</td><td class="num">${r.closeCr?fmt(r.closeCr):''}</td></tr>`).join('')}
+        </tbody>
+        <tfoot><tr><td colspan="2">${t('total')}</td><td class="num">${fmt(rows.reduce((s,r)=>s+r.openDr,0))}</td><td class="num">${fmt(rows.reduce((s,r)=>s+r.openCr,0))}</td><td class="num">${fmt(rows.reduce((s,r)=>s+r.perDr,0))}</td><td class="num">${fmt(rows.reduce((s,r)=>s+r.perCr,0))}</td><td class="num">${fmt(totDr)}</td><td class="num">${fmt(totCr)}</td></tr></tfoot>
+      </table>`);
+
+  el.innerHTML = `<div class="card">
+    <div class="report-head">
+      <div class="co">${pref.companyName||''}</div>
+      <div class="title">${pref.txtTB || 'Trial Balance'}</div>
+      <div class="sub">As at end of ${shortYear(state.years[idx]?.name)||''}</div>
+    </div>
+    <div class="controls no-print" style="justify-content:space-between;margin-bottom:10px;flex-wrap:wrap">
+      <div class="controls">
+        <button class="pill-btn ${view==='2col'?'active':''}" id="tb2ViewBtn">2-Column</button>
+        <button class="pill-btn ${view==='6col'?'active':''}" id="tb6ViewBtn">6-Column</button>
+      </div>
+      <div class="controls">
+        <button class="btn-ghost btn-sm" id="tbPdfBtn">Download PDF</button>
+        <button class="btn-ghost btn-sm" id="tbXlsBtn">Download Excel</button>
+      </div>
+    </div>
+    ${tableBody}
+    <p class="${balanced?'ok':'err'}" style="margin-top:10px">${balanced?'Balanced — Dr = Cr':'Not balanced — check entries.'}</p>
+  </div>`;
+
+  el.querySelector('#tb2ViewBtn').onclick = ()=>{ pref.tbView='2col'; savePref(); renderTB(); };
+  el.querySelector('#tb6ViewBtn').onclick = ()=>{ pref.tbView='6col'; savePref(); renderTB(); };
+  el.querySelector('#tbPdfBtn').onclick = ()=> printSingle(`<div class="report-head"><div class="title">${pref.txtTB||'Trial Balance'}</div><div class="sub">As at end of ${shortYear(state.years[idx]?.name)||''}</div></div>${tableBody}`);
+  el.querySelector('#tbXlsBtn').onclick = ()=>{
+    const rowsOut = view==='2col'
+      ? [['Code','Account','Type','Debit','Credit'], ...rows.map(r=>[r.code,r.name,r.type,r.closeDr?r.closeDr.toFixed(2):'',r.closeCr?r.closeCr.toFixed(2):'']), ['','','Total',totDr.toFixed(2),totCr.toFixed(2)]]
+      : [['Code','Account','Opening Dr','Opening Cr','Period Dr','Period Cr','Closing Dr','Closing Cr'],
+         ...rows.map(r=>[r.code,r.name,r.openDr?r.openDr.toFixed(2):'',r.openCr?r.openCr.toFixed(2):'',r.perDr?r.perDr.toFixed(2):'',r.perCr?r.perCr.toFixed(2):'',r.closeDr?r.closeDr.toFixed(2):'',r.closeCr?r.closeCr.toFixed(2):''])];
+    downloadCSV(rowsOut, `trial_balance_${view}_${state.years[idx]?.name||''}.csv`);
+  };
+}
+
+/* ---------------- P&L ---------------- */
+function plFor(idx){
+  if(idx<0) return {inc:[], exp:[], totInc:0, totExp:0, net:0};
+  const inc = state.accounts.filter(a=>a.type==='Income').map(a=>({a,v:balanceFor(a,idx).net}));
+  const exp = state.accounts.filter(a=>a.type==='Expense').map(a=>({a,v:balanceFor(a,idx).net}));
+  const totInc = inc.reduce((s,x)=>s+x.v,0), totExp = exp.reduce((s,x)=>s+x.v,0);
+  return {inc,exp,totInc,totExp,net:totInc-totExp};
+}
+
+function renderPL(){
+  const el = document.getElementById('panel-pl'); const idx = selIdx();
+  const showComp = pref.showComparative && idx > 0;
+  const curr = plFor(idx);
+  const prev = showComp ? plFor(idx-1) : null;
+  const cols = showComp ? 3 : 2;
+
+  const sortIncome = list => {
+    const main = list.filter(x=>/^revenue/i.test(x.a.name));
+    const other = list.filter(x=>!/^revenue/i.test(x.a.name));
+    return [...main, ...other];
+  };
+  const incNZ = sortIncome(state.accounts.filter(a=>a.type==='Income').map(a=>{
+    const v = balanceFor(a,idx).net;
+    const pv = showComp ? balanceFor(a,idx-1).net : 0;
+    return {a, v, pv};
+  }).filter(x=>Math.abs(x.v)>0.005 || Math.abs(x.pv)>0.005));
+
+  const expNZ = state.accounts.filter(a=>a.type==='Expense').map(a=>{
+    const v = balanceFor(a,idx).net;
+    const pv = showComp ? balanceFor(a,idx-1).net : 0;
+    return {a, v, pv};
+  }).filter(x=>Math.abs(x.v)>0.005 || Math.abs(x.pv)>0.005);
+
+  const yearHead = `<th class="num year-col">${shortYear(state.years[idx]?.name)||'Current'}</th>${showComp?`<th class="num year-col">${shortYear(state.years[idx-1]?.name)}</th>`:''}`;
+  const tableBody = `
+    <table>
+      <thead><tr><th>Particulars</th>${yearHead}</tr></thead>
+      <tbody>
+        <tr class="unit-row"><td colspan="${cols}">${getHeaderUnitNote()}</td></tr>
+        <tr class="section-row"><td colspan="${cols}">${pref.txtInc || 'Income'}</td></tr>
+        ${incNZ.length ? incNZ.map(x=>`<tr><td>${x.a.name}</td><td class="num">${fmt(x.v)}</td>${showComp ? `<td class="num">${fmt(x.pv)}</td>` : ''}</tr>`).join('') : `<tr><td class="empty" colspan="${cols}">None</td></tr>`}
+        <tr class="subtotal-row"><td>Total ${pref.txtInc || 'Income'}</td><td class="num">${fmt(curr.totInc)}</td>${showComp ? `<td class="num">${fmt(prev.totInc)}</td>` : ''}</tr>
+        <tr class="section-row"><td colspan="${cols}">${pref.txtExp || 'Expense'}</td></tr>
+        ${expNZ.length ? expNZ.map(x=>`<tr><td>${x.a.name}</td><td class="num">${fmt(x.v)}</td>${showComp ? `<td class="num">${fmt(x.pv)}</td>` : ''}</tr>`).join('') : `<tr><td class="empty" colspan="${cols}">None</td></tr>`}
+        <tr class="subtotal-row"><td>Total ${pref.txtExp || 'Expense'}</td><td class="num">${fmt(curr.totExp)}</td>${showComp ? `<td class="num">${fmt(prev.totExp)}</td>` : ''}</tr>
+      </tbody>
+      <tfoot>
+        <tr><td>${curr.net>=0 ? t('netProfit') : t('netLoss')}</td><td class="num">${fmt(curr.net)}</td>${showComp ? `<td class="num">${fmt(prev.net)}</td>` : ''}</tr>
+      </tfoot>
+    </table>`;
+
+  el.innerHTML = `<div class="card">
+    <div class="report-head">
+      <div class="co">${pref.companyName||''}</div>
+      <div class="title">${pref.txtPL || 'Profit & Loss Statement'}</div>
+      <div class="sub">For the period ended ${shortYear(state.years[idx]?.name)||''}</div>
+    </div>
+    <div class="controls no-print" style="justify-content:flex-end;margin-bottom:10px">
+      <button class="btn-ghost btn-sm" id="plPdfBtn">Download PDF</button>
+      <button class="btn-ghost btn-sm" id="plXlsBtn">Download Excel</button>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="l">${pref.txtInc || 'Income'}</div><div class="v">${fmt(curr.totInc)}</div></div>
+      <div class="stat"><div class="l">${pref.txtExp || 'Expense'}</div><div class="v">${fmt(curr.totExp)}</div></div>
+      <div class="stat"><div class="l">${curr.net>=0 ? t('netProfit') : t('netLoss')}</div><div class="v" style="color:${curr.net>=0?'var(--good)':'var(--bad)'}">${fmt(Math.abs(curr.net))}</div></div>
+    </div>
+    ${tableBody}
+  </div>`;
+
+  el.querySelector('#plPdfBtn').onclick = ()=> printSingle(`<div class="report-head"><div class="title">${pref.txtPL||'Profit & Loss Statement'}</div><div class="sub">For the period ended ${shortYear(state.years[idx]?.name)||''}</div></div>${tableBody}`);
+  el.querySelector('#plXlsBtn').onclick = ()=>{
+    const rows = [['Particulars', shortYear(state.years[idx]?.name)||'Current', ...(showComp?[shortYear(state.years[idx-1]?.name)]:[])],
+      [pref.txtInc||'Income'], ...incNZ.map(x=>[x.a.name, x.v.toFixed(2), ...(showComp?[x.pv.toFixed(2)]:[])]),
+      [`Total ${pref.txtInc||'Income'}`, curr.totInc.toFixed(2), ...(showComp?[prev.totInc.toFixed(2)]:[])],
+      [pref.txtExp||'Expense'], ...expNZ.map(x=>[x.a.name, x.v.toFixed(2), ...(showComp?[x.pv.toFixed(2)]:[])]),
+      [`Total ${pref.txtExp||'Expense'}`, curr.totExp.toFixed(2), ...(showComp?[prev.totExp.toFixed(2)]:[])],
+      [curr.net>=0?t('netProfit'):t('netLoss'), curr.net.toFixed(2), ...(showComp?[prev.net.toFixed(2)]:[])]];
+    downloadCSV(rows, `profit_loss_${state.years[idx]?.name||''}.csv`);
+  };
+}
+
+/* ---------------- Balance Sheet ---------------- */
+function renderBS(){
+  const el = document.getElementById('panel-bs'); const idx = selIdx();
+  const showComp = pref.showComparative && idx > 0;
+  const {net} = plFor(idx);
+  const broughtForward = idx>0 ? cumulativeRetained(idx-1) : 0;
+  const prevNet = showComp ? plFor(idx-1).net : 0;
+  const prevBroughtForward = (showComp && idx>1) ? cumulativeRetained(idx-2) : 0;
+
+  const assets = state.accounts.filter(a=>a.type==='Asset').map(a=>({a, v:balanceFor(a,idx).net, pv:showComp?balanceFor(a,idx-1).net:0})).filter(x=>Math.abs(x.v)>0.005 || Math.abs(x.pv)>0.005);
+  const liabs = state.accounts.filter(a=>a.type==='Liability').map(a=>({a, v:balanceFor(a,idx).net, pv:showComp?balanceFor(a,idx-1).net:0})).filter(x=>Math.abs(x.v)>0.005 || Math.abs(x.pv)>0.005);
+  const eq = state.accounts.filter(a=>a.type==='Equity').map(a=>({a, v:balanceFor(a,idx).net, pv:showComp?balanceFor(a,idx-1).net:0})).filter(x=>Math.abs(x.v)>0.005 || Math.abs(x.pv)>0.005);
+
+  const totA = state.accounts.filter(a=>a.type==='Asset').reduce((s,a)=>s+balanceFor(a,idx).net,0);
+  const totL = state.accounts.filter(a=>a.type==='Liability').reduce((s,a)=>s+balanceFor(a,idx).net,0);
+  const totE = state.accounts.filter(a=>a.type==='Equity').reduce((s,a)=>s+balanceFor(a,idx).net,0) + broughtForward + net;
+
+  const prevTotA = showComp ? state.accounts.filter(a=>a.type==='Asset').reduce((s,a)=>s+balanceFor(a,idx-1).net,0) : 0;
+  const prevTotL = showComp ? state.accounts.filter(a=>a.type==='Liability').reduce((s,a)=>s+balanceFor(a,idx-1).net,0) : 0;
+  const prevTotE = showComp ? state.accounts.filter(a=>a.type==='Equity').reduce((s,a)=>s+balanceFor(a,idx-1).net,0) + prevBroughtForward + prevNet : 0;
+
+  const diff = totA - (totL+totE);
+  const isSplitRE = pref.retainedEarningsMode === 'split';
+  const cols = showComp ? 3 : 2;
+  const yearHead = `<th class="num year-col">${shortYear(state.years[idx]?.name)||'Current'}</th>${showComp?`<th class="num year-col">${shortYear(state.years[idx-1]?.name)}</th>`:''}`;
+
+  const eqRows = !isSplitRE ?
+      `<tr><td>Retained Earnings (Accumulated)</td><td class="num">${fmt(broughtForward + net)}</td>${showComp?`<td class="num">${fmt(prevBroughtForward + prevNet)}</td>`:''}</tr>`
+    : `${Math.abs(broughtForward)>0.005 || (showComp && Math.abs(prevBroughtForward)>0.005) ? `<tr><td>Retained Earnings — Brought Forward</td><td class="num">${fmt(broughtForward)}</td>${showComp?`<td class="num">${fmt(prevBroughtForward)}</td>`:''}</tr>`:''}
+       ${Math.abs(net)>0.005 || (showComp && Math.abs(prevNet)>0.005) ? `<tr><td>Net Profit / (Loss) — Current Year</td><td class="num">${fmt(net)}</td>${showComp?`<td class="num">${fmt(prevNet)}</td>`:''}</tr>`:''}`;
+
+  const tableBody = `
+    <table>
+      <thead><tr><th>Particulars</th>${yearHead}</tr></thead>
+      <tbody>
+        <tr class="unit-row"><td colspan="${cols}">${getHeaderUnitNote()}</td></tr>
+        <tr class="section-row"><td colspan="${cols}">${pref.txtAsset || 'Assets'}</td></tr>
+        ${assets.length?assets.map(x=>`<tr><td>${x.a.name}</td><td class="num">${fmt(x.v)}</td>${showComp?`<td class="num">${fmt(x.pv)}</td>`:''}</tr>`).join(''):`<tr><td class="empty" colspan="${cols}">None</td></tr>`}
+        <tr class="subtotal-row"><td>Total ${pref.txtAsset || 'Assets'}</td><td class="num">${fmt(totA)}</td>${showComp?`<td class="num">${fmt(prevTotA)}</td>`:''}</tr>
+        <tr class="section-row"><td colspan="${cols}">${pref.txtLiab || 'Liabilities'}</td></tr>
+        ${liabs.length?liabs.map(x=>`<tr><td>${x.a.name}</td><td class="num">${fmt(x.v)}</td>${showComp?`<td class="num">${fmt(x.pv)}</td>`:''}</tr>`).join(''):`<tr><td class="empty" colspan="${cols}">None</td></tr>`}
+        <tr class="subtotal-row"><td>Total ${pref.txtLiab || 'Liabilities'}</td><td class="num">${fmt(totL)}</td>${showComp?`<td class="num">${fmt(prevTotL)}</td>`:''}</tr>
+        <tr class="section-row"><td colspan="${cols}">${pref.txtEq || 'Equity'}</td></tr>
+        ${eq.map(x=>`<tr><td>${x.a.name}</td><td class="num">${fmt(x.v)}</td>${showComp?`<td class="num">${fmt(x.pv)}</td>`:''}</tr>`).join('')}
+        ${eqRows}
+        <tr class="subtotal-row"><td>Total ${pref.txtEq || 'Equity'}</td><td class="num">${fmt(totE)}</td>${showComp?`<td class="num">${fmt(prevTotE)}</td>`:''}</tr>
+      </tbody>
+      <tfoot><tr><td>Liabilities + Equity</td><td class="num">${fmt(totL+totE)}</td>${showComp?`<td class="num">${fmt(prevTotL+prevTotE)}</td>`:''}</tr></tfoot>
+    </table>
+    <p class="${Math.abs(diff)<0.005?'ok':'err'}" style="margin-top:10px">${Math.abs(diff)<0.005?'Balance Sheet balances':'Difference: '+fmt(diff)+' — check account types/entries.'}</p>`;
+
+  el.innerHTML = `<div class="card">
+    <div class="report-head">
+      <div class="co">${pref.companyName||''}</div>
+      <div class="title">${pref.txtBS || 'Balance Sheet'}</div>
+      <div class="sub">As at end of ${shortYear(state.years[idx]?.name)||''}</div>
+    </div>
+    <div class="controls no-print" style="justify-content:flex-end;margin-bottom:10px">
+      <button class="btn-ghost btn-sm" id="bsPdfBtn">Download PDF</button>
+      <button class="btn-ghost btn-sm" id="bsXlsBtn">Download Excel</button>
+    </div>
+    ${tableBody}
+  </div>`;
+
+  el.querySelector('#bsPdfBtn').onclick = ()=> printSingle(`<div class="report-head"><div class="title">${pref.txtBS||'Balance Sheet'}</div><div class="sub">As at end of ${shortYear(state.years[idx]?.name)||''}</div></div>${tableBody}`);
+  el.querySelector('#bsXlsBtn').onclick = ()=>{
+    const rows = [['Particulars', shortYear(state.years[idx]?.name)||'Current', ...(showComp?[shortYear(state.years[idx-1]?.name)]:[])],
+      [pref.txtAsset||'Assets'], ...assets.map(x=>[x.a.name, x.v.toFixed(2), ...(showComp?[x.pv.toFixed(2)]:[])]),
+      [`Total ${pref.txtAsset||'Assets'}`, totA.toFixed(2), ...(showComp?[prevTotA.toFixed(2)]:[])],
+      [pref.txtLiab||'Liabilities'], ...liabs.map(x=>[x.a.name, x.v.toFixed(2), ...(showComp?[x.pv.toFixed(2)]:[])]),
+      [`Total ${pref.txtLiab||'Liabilities'}`, totL.toFixed(2), ...(showComp?[prevTotL.toFixed(2)]:[])],
+      [pref.txtEq||'Equity'], ...eq.map(x=>[x.a.name, x.v.toFixed(2), ...(showComp?[x.pv.toFixed(2)]:[])]),
+      [`Total ${pref.txtEq||'Equity'}`, totE.toFixed(2), ...(showComp?[prevTotE.toFixed(2)]:[])]];
+    downloadCSV(rows, `balance_sheet_${state.years[idx]?.name||''}.csv`);
+  };
+}
+
+/* ---------------- Cash Flow ---------------- */
+function indirectCF(idx){
+  if(idx<0) return {netProfit:0, buckets:{Operating:0,Investing:0,Financing:0}, lines:[], totalCF:0, openCash:0, closeCash:0, actual:0};
+  const {net: netProfit} = plFor(idx);
+  const buckets={Operating:netProfit,Investing:0,Financing:0}; const lines=[];
+  state.accounts.filter(a=>!a.isCash && !isPL(a)).forEach(a=>{
+    const opening = idx>0 ? calcBalance(a, entriesUpTo(idx-1)).net : 0;
+    const closing = calcBalance(a, entriesUpTo(idx)).net;
+    const delta = closing-opening; if(Math.abs(delta)<0.005) return;
+    const cashEffect = a.type==='Asset' ? -delta : delta;
+    const cat = a.cf || 'Operating';
+    buckets[cat]+=cashEffect; lines.push({cat,name:a.name,cashEffect});
+  });
+  const totalCF = buckets.Operating+buckets.Investing+buckets.Financing;
+  const cashAccs = state.accounts.filter(a=>a.isCash);
+  const openCash = idx>0 ? cashAccs.reduce((s,a)=>s+calcBalance(a,entriesUpTo(idx-1)).net,0) : 0;
+  const closeCash = cashAccs.reduce((s,a)=>s+calcBalance(a,entriesUpTo(idx)).net,0);
+  return {netProfit, buckets, lines, totalCF, openCash, closeCash, actual: closeCash-openCash};
+}
+
+function renderCF(){
+  const el = document.getElementById('panel-cf'); const idx = selIdx();
+  const {netProfit, buckets, lines, totalCF, openCash, closeCash, actual} = indirectCF(idx);
+  const ok = Math.abs(totalCF-actual) < 0.01;
+  const cashAccs = state.accounts.filter(a=>a.isCash);
+
+  const tableBody = `
+    <table>
+      <thead><tr><th>Particulars</th><th class="num year-col">${shortYear(state.years[idx]?.name)||'Current'}</th></tr></thead>
+      <tbody>
+        <tr class="unit-row"><td colspan="2">${getHeaderUnitNote()}</td></tr>
+        <tr class="section-row"><td colspan="2">Operating Activities</td></tr>
+        <tr><td>Net Profit / (Loss) for the year</td><td class="num">${fmt(netProfit)}</td></tr>
+        ${lines.filter(l=>l.cat==='Operating').map(l=>`<tr><td>Adjustment: ${l.name}</td><td class="num">${fmt(l.cashEffect)}</td></tr>`).join('')}
+        <tr class="subtotal-row"><td>Net Cash from Operating</td><td class="num">${fmt(buckets.Operating)}</td></tr>
+        <tr class="section-row"><td colspan="2">Investing Activities</td></tr>
+        ${lines.filter(l=>l.cat==='Investing').length?lines.filter(l=>l.cat==='Investing').map(l=>`<tr><td>${l.name}</td><td class="num">${fmt(l.cashEffect)}</td></tr>`).join(''):'<tr><td class="empty" colspan="2">None</td></tr>'}
+        <tr class="subtotal-row"><td>Net Cash from Investing</td><td class="num">${fmt(buckets.Investing)}</td></tr>
+        <tr class="section-row"><td colspan="2">Financing Activities</td></tr>
+        ${lines.filter(l=>l.cat==='Financing').length?lines.filter(l=>l.cat==='Financing').map(l=>`<tr><td>${l.name}</td><td class="num">${fmt(l.cashEffect)}</td></tr>`).join(''):'<tr><td class="empty" colspan="2">None</td></tr>'}
+        <tr class="subtotal-row"><td>Net Cash from Financing</td><td class="num">${fmt(buckets.Financing)}</td></tr>
+        <tr class="section-row"><td colspan="2">Reconciliation</td></tr>
+        <tr><td>Cash &amp; Bank — opening</td><td class="num">${fmt(openCash)}</td></tr>
+        <tr><td>Cash &amp; Bank — closing (per ledger)</td><td class="num">${fmt(closeCash)}</td></tr>
+      </tbody>
+      <tfoot><tr><td>Net movement per Cash Flow Statement</td><td class="num">${fmt(totalCF)}</td></tr></tfoot>
+    </table>`;
+
+  el.innerHTML = `<div class="card">
+    <div class="report-head">
+      <div class="co">${pref.companyName||''}</div>
+      <div class="title">${pref.txtCF || 'Cash Flow Statement'}</div>
+      <div class="sub">Indirect method — for ${shortYear(state.years[idx]?.name)||''}</div>
+    </div>
+    <div class="controls no-print" style="justify-content:flex-end;margin-bottom:10px">
+      <button class="btn-ghost btn-sm" id="cfPdfBtn">Download PDF</button>
+      <button class="btn-ghost btn-sm" id="cfXlsBtn">Download Excel</button>
+    </div>
+    ${!cashAccs.length?'<p class="err">No account tagged as "Cash/Bank" — flag cash accounts in Chart of Accounts.</p>':''}
+    <div class="stat-row">
+      <div class="stat"><div class="l">Operating</div><div class="v">${fmt(buckets.Operating)}</div></div>
+      <div class="stat"><div class="l">Investing</div><div class="v">${fmt(buckets.Investing)}</div></div>
+      <div class="stat"><div class="l">Financing</div><div class="v">${fmt(buckets.Financing)}</div></div>
+      <div class="stat"><div class="l">Net Change in Cash</div><div class="v">${fmt(totalCF)}</div></div>
+    </div>
+    ${tableBody}
+  </div>`;
+
+  el.querySelector('#cfPdfBtn').onclick = ()=> printSingle(`<div class="report-head"><div class="title">${pref.txtCF||'Cash Flow Statement'}</div><div class="sub">Indirect method — for ${shortYear(state.years[idx]?.name)||''}</div></div>${tableBody}`);
+  el.querySelector('#cfXlsBtn').onclick = ()=>{
+    const rows = [['Particulars', shortYear(state.years[idx]?.name)||'Current'],
+      ['Operating Activities'], ['Net Profit / (Loss) for the year', netProfit.toFixed(2)],
+      ...lines.filter(l=>l.cat==='Operating').map(l=>[`Adjustment: ${l.name}`, l.cashEffect.toFixed(2)]),
+      ['Net Cash from Operating', buckets.Operating.toFixed(2)],
+      ['Investing Activities'], ...lines.filter(l=>l.cat==='Investing').map(l=>[l.name, l.cashEffect.toFixed(2)]),
+      ['Net Cash from Investing', buckets.Investing.toFixed(2)],
+      ['Financing Activities'], ...lines.filter(l=>l.cat==='Financing').map(l=>[l.name, l.cashEffect.toFixed(2)]),
+      ['Net Cash from Financing', buckets.Financing.toFixed(2)],
+      ['Cash & Bank - opening', openCash.toFixed(2)], ['Cash & Bank - closing', closeCash.toFixed(2)],
+      ['Net movement per CF Statement', totalCF.toFixed(2)]];
+    downloadCSV(rows, `cash_flow_${state.years[idx]?.name||''}.csv`);
+  };
+}
+
+/* ---------------- Cash & Bank Movements Tab (New Feature) ---------------- */
+function renderCashBank(){
+  const el = document.getElementById('panel-cashbank');
+  const edit = editCashMov;
+  const idx = selIdx();
+  const cashAccs = state.accounts.filter(a=>a.isCash);
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="report-head">
+        <div class="co">${pref.companyName||''}</div>
+        <div class="title">Cash &amp; Bank Reconciliation</div>
+        <div class="sub">Real vs Books, per Cash/Bank account — ${shortYear(state.years[idx]?.name)||''}</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>${edit ? 'Edit Reconciliation Entry' : 'Add Reconciliation Entry'}</h3>
+      ${!cashAccs.length ? '<p class="empty">No account is flagged as Cash/Bank yet. Flag one in Chart of Accounts first.</p>' : `
+      <div class="grid" style="grid-template-columns:1.3fr 130px 1.4fr 1fr 1fr auto">
+        <div><label>Account</label><select id="cbAcc"></select></div>
+        <div><label>Date</label><input type="date" id="cbDate" value="${edit?edit.date:new Date().toISOString().slice(0,10)}"></div>
+        <div><label>Description</label><input id="cbDesc" placeholder="e.g. Inwards, Outwards, Transaction Charges" value="${edit?edit.description||'':''}"></div>
+        <div><label>Real</label><input type="number" step="0.01" id="cbReal" placeholder="Actual movement" value="${edit?edit.real:''}"></div>
+        <div><label>Writeoff</label><input type="number" step="0.01" id="cbWriteoff" placeholder="Adjustment (optional)" value="${edit?edit.writeoff||'':''}"></div>
+        <div style="align-self:end"><button class="btn-primary" id="cbSaveBtn" style="width:100%">${edit?'Save':'Add'}</button></div>
+      </div>
+      <p class="small" style="margin-top:8px">Books = Real + Writeoff (auto-calculated). Writeoff captures small differences — fees, rounding — you're writing off against actual cash movement.</p>
+      <div id="cbErr" class="err"></div>
+      ${edit ? '<button class="btn-ghost btn-sm" id="cbCancelBtn" style="margin-top:8px">Cancel Edit</button>' : ''}
+      `}
+    </div>
+    <div class="card">
+      <h3>Import Reconciliation Entries from CSV</h3>
+      <div class="import-row"><input type="file" id="cbCsvFile" accept=".csv"><button class="btn-ghost btn-sm" id="importCbBtn">Upload &amp; Import</button></div>
+      <p class="small">Columns (case-insensitive): <code>Account, Date, Description, Real, Writeoff</code> — Account must match a Cash/Bank account name exactly.</p>
+      <div id="cbCsvMsg" class="msg"></div>
+    </div>
+    <div id="cbAccountsWrap"></div>
+
+    <div class="card">
+      <h3>${editCount ? 'Edit Cash Count' : 'New Cash Count (Denominations)'}</h3>
+      ${!cashAccs.length ? '<p class="empty">No Cash/Bank account available.</p>' : `
+      <div class="grid" style="grid-template-columns:1.3fr 130px 1fr">
+        <div><label>Account</label><select id="ccAcc"></select></div>
+        <div><label>Date</label><input type="date" id="ccDate" value="${editCount?editCount.date:new Date().toISOString().slice(0,10)}"></div>
+        <div><label>Note</label><input id="ccNote" placeholder="Optional" value="${editCount?editCount.note||'':''}"></div>
+      </div>
+      <div id="ccDenomGrid" class="denom-grid"></div>
+      <div id="ccTotal" class="stat-row" style="margin-top:12px"></div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn-primary" id="ccSaveBtn">${editCount?'Save Count':'Save Cash Count'}</button>
+        ${editCount ? '<button class="btn-ghost" id="ccCancelBtn">Cancel Edit</button>' : ''}
+      </div>
+      <div id="ccErr" class="err"></div>
+      `}
+    </div>
+    <div id="ccListWrap"></div>`;
+
+  if(cashAccs.length){
+    const accSel = el.querySelector('#cbAcc');
+    accSel.innerHTML = cashAccs.map(a=>`<option value="${a.id}" ${edit&&edit.accId===a.id?'selected':''}>${acctCode(a)} · ${a.name}</option>`).join('');
+    enhanceSelect(accSel);
+    el.querySelector('#cbSaveBtn').onclick = ()=>{
+      const err = m=>el.querySelector('#cbErr').textContent=m; err('');
+      const accId = accSel.value, date = el.querySelector('#cbDate').value, description = el.querySelector('#cbDesc').value.trim();
+      const real = parseFloat(el.querySelector('#cbReal').value);
+      const writeoff = parseFloat(el.querySelector('#cbWriteoff').value) || 0;
+      if(!accId){ err('Select an account.'); return; }
+      if(!date){ err('Date is required.'); return; }
+      if(isNaN(real)){ err('Enter the Real (actual) amount.'); return; }
+      if(edit){ Object.assign(edit, {accId, date, description, real, writeoff}); editCashMov=null; }
+      else { state.cashRecon.push({id:uid(), accId, date, description, real, writeoff}); }
+      save(); renderAll();
+    };
+    const cb = el.querySelector('#cbCancelBtn'); if(cb) cb.onclick = ()=>{ editCashMov=null; renderAll(); };
+
+    el.querySelector('#importCbBtn').onclick = ()=>{
+      const file = el.querySelector('#cbCsvFile').files[0];
+      const msg = el.querySelector('#cbCsvMsg'); msg.textContent='';
+      if(!file){ msg.className='msg err'; msg.textContent='Please select a CSV file first.'; return; }
+      Papa.parse(file, { header:true, skipEmptyLines:true, transformHeader:h=>h.trim().toLowerCase(), complete:(res)=>{
+        let added=0, skipped=0;
+        res.data.forEach(row=>{
+          const accName = (row.account||'').trim();
+          const acc = cashAccs.find(a=>a.name.toLowerCase()===accName.toLowerCase());
+          const date = (row.date||'').trim();
+          const real = parseFloat(row.real);
+          if(!acc || !date || isNaN(real)){ skipped++; return; }
+          const writeoff = parseFloat(row.writeoff) || 0;
+          state.cashRecon.push({id:uid(), accId:acc.id, date, description:(row.description||'').trim(), real, writeoff});
+          added++;
+        });
+        save(); renderAll();
+        msg.className='msg ok'; msg.textContent=`Import finished: ${added} added, ${skipped} skipped.`;
+      }});
+    };
+  }
+
+  const wrap = el.querySelector('#cbAccountsWrap');
+  const blocks = cashAccs.map(a=>{
+    const rows = state.cashRecon.filter(m=>m.accId===a.id).sort((x,y)=>x.date.localeCompare(y.date));
+    if(!rows.length) return '';
+    let running = 0;
+    const totReal = rows.reduce((s,m)=>s+m.real,0), totWriteoff = rows.reduce((s,m)=>s+m.writeoff,0), totBooks = totReal+totWriteoff;
+    const ledgerClosing = balanceFor(a, idx).net;
+    const variance = totBooks - ledgerClosing;
+    const body = rows.map(m=>{
+      const books = m.real+m.writeoff; running += books;
+      const day = m.date ? new Date(m.date+'T00:00:00').toLocaleDateString(undefined,{weekday:'long'}) : '';
+      return `<tr><td>${m.date}</td><td class="small">${day}</td><td>${m.description||''}</td><td class="num">${fmt(m.real)}</td><td class="num">${m.writeoff?fmt(m.writeoff):''}</td><td class="num">${fmt(books)}</td>
+      <td><button class="rowbtn" data-e="${m.id}">${t('edit')}</button><button class="rowbtn danger" data-d="${m.id}">${t('delete')}</button></td></tr>`;
+    }).join('');
+    return `<div class="card"><h3><span><span class="code-badge">${acctCode(a)}</span>${a.name}</span></h3>
+      <table><thead><tr><th>Date</th><th>Day</th><th>Description</th><th class="num">Real</th><th class="num">Writeoff</th><th class="num">Books</th><th></th></tr></thead>
+      <tbody>${body}</tbody>
+      <tfoot><tr><td colspan="3">Total</td><td class="num">${fmt(totReal)}</td><td class="num">${fmt(totWriteoff)}</td><td class="num">${fmt(totBooks)}</td><td></td></tr></tfoot></table>
+      <p class="${Math.abs(variance)<0.5?'ok':'err'}" style="margin-top:10px">Books total ${fmt(totBooks)} vs Ledger closing balance ${fmt(ledgerClosing)} — ${Math.abs(variance)<0.5?'Matched':'Variance of '+fmt(Math.abs(variance))}</p>
+    </div>`;
+  }).join('');
+  wrap.innerHTML = blocks || `<div class="card"><p class="empty">No reconciliation entries yet — add one above for any Cash/Bank account.</p></div>`;
+
+  wrap.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{
+    editCashMov = state.cashRecon.find(x=>x.id===b.dataset.e);
+    renderAll(); scrollToPanelTop('panel-cashbank');
+  });
+  wrap.querySelectorAll('[data-d]').forEach(b=>b.onclick=async ()=>{
+    if(!(await showConfirm('Delete this reconciliation entry?'))) return;
+    state.cashRecon = state.cashRecon.filter(x=>x.id!==b.dataset.d);
+    save(); renderAll();
+  });
+
+  /* ---- Cash denomination count ---- */
+  if(cashAccs.length){
+    const ccAccSel = el.querySelector('#ccAcc');
+    ccAccSel.innerHTML = cashAccs.map(a=>`<option value="${a.id}" ${editCount&&editCount.accId===a.id?'selected':''}>${acctCode(a)} · ${a.name}</option>`).join('');
+    enhanceSelect(ccAccSel);
+    const grid = el.querySelector('#ccDenomGrid');
+    grid.innerHTML = DENOMS.map(d=>`<div class="denom-cell"><label>Rs. ${d.toLocaleString()}</label>
+      <input type="number" min="0" step="1" data-denom="${d}" value="${editCount?(editCount.denominations[d]||''):''}" placeholder="0">
+      <div class="sub" data-sub="${d}">= 0.00</div></div>`).join('');
+    const recalc = ()=>{
+      let total = 0;
+      grid.querySelectorAll('[data-denom]').forEach(inp=>{
+        const d = parseFloat(inp.dataset.denom); const qty = parseInt(inp.value)||0; const sub = d*qty; total += sub;
+        grid.querySelector(`[data-sub="${d}"]`).textContent = '= ' + fmt(sub);
+      });
+      const accId = ccAccSel.value; const acc = accById(accId);
+      const ledgerClosing = acc ? balanceFor(acc, idx).net : 0;
+      const variance = total - ledgerClosing;
+      el.querySelector('#ccTotal').innerHTML = `
+        <div class="stat"><div class="l">Total Counted</div><div class="v">${fmt(total)}</div></div>
+        <div class="stat"><div class="l">Ledger Balance</div><div class="v">${fmt(ledgerClosing)}</div></div>
+        <div class="stat" style="border-left-color:${Math.abs(variance)<0.5?'var(--good)':'var(--bad)'}"><div class="l">${Math.abs(variance)<0.5?'Matched':'Variance'}</div><div class="v" style="color:${Math.abs(variance)<0.5?'var(--good)':'var(--bad)'}">${fmt(Math.abs(variance))}</div></div>`;
+      return total;
+    };
+    grid.querySelectorAll('[data-denom]').forEach(inp=>inp.oninput=recalc);
+    ccAccSel.addEventListener('change', recalc);
+    recalc();
+    el.querySelector('#ccSaveBtn').onclick = ()=>{
+      const err = m=>el.querySelector('#ccErr').textContent=m; err('');
+      const accId = ccAccSel.value, date = el.querySelector('#ccDate').value, note = el.querySelector('#ccNote').value.trim();
+      if(!accId){ err('Select an account.'); return; }
+      if(!date){ err('Date is required.'); return; }
+      const denominations = {};
+      grid.querySelectorAll('[data-denom]').forEach(inp=>{ const qty = parseInt(inp.value)||0; if(qty>0) denominations[inp.dataset.denom] = qty; });
+      if(editCount){ Object.assign(editCount, {accId, date, note, denominations}); editCount=null; }
+      else { state.cashCounts.push({id:uid(), accId, date, note, denominations}); }
+      save(); renderAll();
+    };
+    const ccb = el.querySelector('#ccCancelBtn'); if(ccb) ccb.onclick = ()=>{ editCount=null; renderAll(); };
+  }
+
+  const countsWrap = el.querySelector('#ccListWrap');
+  const countBlocks = cashAccs.map(a=>{
+    const counts = state.cashCounts.filter(c=>c.accId===a.id).sort((x,y)=>y.date.localeCompare(x.date));
+    if(!counts.length) return '';
+    const ledgerClosing = balanceFor(a, idx).net;
+    const rows = counts.map(c=>{
+      const total = DENOMS.reduce((s,d)=>s+d*(c.denominations[d]||0),0);
+      const variance = total - ledgerClosing;
+      const breakdown = DENOMS.filter(d=>c.denominations[d]).map(d=>`${d}×${c.denominations[d]}`).join(', ');
+      return `<tr><td>${c.date}</td><td class="small">${breakdown||'—'}${c.note?' · '+c.note:''}</td><td class="num">${fmt(total)}</td>
+      <td class="num ${Math.abs(variance)<0.5?'ok':'err'}">${Math.abs(variance)<0.5?'Matched':fmt(Math.abs(variance))}</td>
+      <td><button class="rowbtn" data-ce="${c.id}">${t('edit')}</button><button class="rowbtn danger" data-cd="${c.id}">${t('delete')}</button></td></tr>`;
+    }).join('');
+    return `<div class="card"><h3><span><span class="code-badge">${acctCode(a)}</span>${a.name} — Cash Counts</span><span class="small">Ledger balance: ${fmt(ledgerClosing)}</span></h3>
+      <table><thead><tr><th>Date</th><th>Breakdown</th><th class="num">Counted</th><th class="num">vs Ledger</th><th></th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+  }).join('');
+  countsWrap.innerHTML = countBlocks || '';
+  countsWrap.querySelectorAll('[data-ce]').forEach(b=>b.onclick=()=>{
+    editCount = state.cashCounts.find(x=>x.id===b.dataset.ce);
+    renderAll(); scrollToPanelTop('panel-cashbank');
+  });
+  countsWrap.querySelectorAll('[data-cd]').forEach(b=>b.onclick=async ()=>{
+    if(!(await showConfirm('Delete this cash count?'))) return;
+    state.cashCounts = state.cashCounts.filter(x=>x.id!==b.dataset.cd);
+    save(); renderAll();
+  });
+}
+
+
+/* ---------------- Audit Clients & Allowance Tracker ---------------- */
+function renderAudit(){
+  const el = document.getElementById('panel-audit');
+  const edit = editAudit;
+  const idx = selIdx();
+  const rowsData = auditClientsForYear().map(cl=>({cl, a:auditClientAmounts(cl)}));
+  const totExp = rowsData.reduce((s,r)=>s+r.a.exp,0), totFirm = rowsData.reduce((s,r)=>s+r.a.firm,0), totClient = rowsData.reduce((s,r)=>s+r.a.client,0);
+  const totNet = (totFirm + totClient) - totExp;
+  const ovVal = v => (v===null||v===undefined) ? '' : v;
+  const cellHtml = (r,k)=>{
+    const shown = r.a[k];
+    return `<td class="num">${shown ? fmt(shown) : '<span class="small">None</span>'}<div class="small" style="font-family:var(--f-ui)">${r.a.isOv(k)?`edited · <a href="#" data-reset="${r.cl.id}:${k}" style="color:var(--gold)">reset to auto</a>`:'auto'}</div></td>`;
+  };
+
+  el.innerHTML = `
+    <div class="card">
+      <h3>${edit ? 'Edit Audit Client' : 'Add Audit Client'} <span class="small">${shortYear(state.years[idx]?.name)||''}</span></h3>
+      <div class="grid audit">
+        <div><label>Client Name</label><input id="audClient" placeholder="e.g. ABC Textiles Ltd" value="${edit ? edit.clientName : ''}"></div>
+        <div><label>My Expense (override)</label><input type="number" step="1" id="audExp" placeholder="auto from JVs" value="${edit ? ovVal(edit.expOverride) : ''}"></div>
+        <div><label>Firm Allowance (override)</label><input type="number" step="1" id="audFirm" placeholder="auto from JVs" value="${edit ? ovVal(edit.firmOverride) : ''}"></div>
+        <div><label>Client Allowance (override)</label><input type="number" step="1" id="audClientAll" placeholder="auto from JVs" value="${edit ? ovVal(edit.clientOverride) : ''}"></div>
+        <div style="align-self:end"><button class="btn-primary" id="saveAuditBtn" style="width:100%">${edit ? t('save') : t('add')}</button></div>
+        <div style="align-self:end">${edit ? '<button class="btn-ghost" id="cancelAuditBtn">Cancel</button>' : ''}</div>
+      </div>
+      <div id="auditErr" class="err"></div>
+      <p class="small" style="margin-top:8px">Amounts are fetched automatically from Journal lines tagged to this client (Journal Entries: "Audit Client" + "Tag as"). Leave override blank to use the fetched value; enter a number only when the claimed amount differs from the JV (e.g. JV 8,000 but allowance 5,800).</p>
+    </div>
+
+    <div class="card">
+      <div class="report-head">
+        <div class="co">${pref.companyName||''}</div>
+        <div class="title">Audit Clients Expense & Allowance Summary</div>
+        <div class="sub">${shortYear(state.years[idx]?.name)||''}</div>
+        <div class="unit-note">${getHeaderUnitNote()}</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat"><div class="l">Total My Expenses</div><div class="v" style="color:var(--bad)">${fmt(totExp)}</div></div>
+        <div class="stat"><div class="l">Firm Allowance</div><div class="v">${fmt(totFirm)}</div></div>
+        <div class="stat"><div class="l">Client Allowance</div><div class="v">${fmt(totClient)}</div></div>
+        <div class="stat" style="border-left-color:${totNet>=0?'var(--good)':'var(--bad)'}">
+          <div class="l">${totNet>=0 ? 'Savings / Profit' : 'Net Cost Incurred'}</div>
+          <div class="v" style="color:${totNet>=0?'var(--good)':'var(--bad)'}">${fmt(Math.abs(totNet))}</div>
+        </div>
+      </div>
+      ${!rowsData.length ? '<p class="empty">No audit clients for this year yet.</p>' : `
+        <table>
+          <thead><tr><th>Client Name</th><th class="num">My Expenses</th><th class="num">Firm Allowance</th><th class="num">Client Allowance</th><th class="num">Net Cost / (Savings)</th><th></th></tr></thead>
+          <tbody>
+            ${rowsData.map(r=>{
+              const netCost = r.a.net;
+              return `<tr>
+                <td><strong>${r.cl.clientName}</strong></td>
+                ${cellHtml(r,'exp')}${cellHtml(r,'firm')}${cellHtml(r,'client')}
+                <td class="num" style="font-weight:600;color:${netCost>0?'var(--bad)':'var(--good)'}">${netCost > 0 ? fmt(netCost) : (netCost < 0 ? '(' + fmt(Math.abs(netCost)) + ')' : '0.00')}</td>
+                <td class="btn-group"><button class="rowbtn" data-e="${r.cl.id}">${t('edit')}</button><button class="rowbtn danger" data-d="${r.cl.id}">${t('delete')}</button></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+          <tfoot><tr><td>Total</td><td class="num">${fmt(totExp)}</td><td class="num">${fmt(totFirm)}</td><td class="num">${fmt(totClient)}</td>
+            <td class="num" style="color:${totNet>=0?'var(--good)':'var(--bad)'}">${totNet < 0 ? fmt(Math.abs(totNet)) : '(' + fmt(totNet) + ')'}</td><td></td></tr></tfoot>
+        </table>`}
+    </div>`;
+
+  const numOrNull = id => { const v = el.querySelector(id).value; return v==='' ? null : (parseFloat(v)||0); };
+  el.querySelector('#saveAuditBtn').onclick = () => {
+    const err = m => el.querySelector('#auditErr').textContent = m; err('');
+    const clientName = el.querySelector('#audClient').value.trim();
+    if(!clientName){ err('Client name is required.'); return; }
+    const data = { clientName, expOverride:numOrNull('#audExp'), firmOverride:numOrNull('#audFirm'), clientOverride:numOrNull('#audClientAll') };
+    if(edit){ Object.assign(edit, data); editAudit = null; }
+    else { state.auditClients.push({ id:uid(), yearId:state.currentYearId, ...data }); }
+    save(); renderAll();
+  };
+  const cb = el.querySelector('#cancelAuditBtn'); if(cb) cb.onclick = ()=>{ editAudit=null; renderAll(); };
+  el.querySelectorAll('[data-reset]').forEach(a=>a.onclick=(ev)=>{
+    ev.preventDefault();
+    const [id, field] = a.dataset.reset.split(':'); const cl = state.auditClients.find(x=>x.id===id);
+    if(cl){ cl[field+'Override'] = null; save(); renderAll(); }
+  });
+  el.querySelectorAll('[data-e]').forEach(b => b.onclick = () => { editAudit = state.auditClients.find(x => x.id === b.dataset.e); renderAll(); scrollToPanelTop('panel-audit'); });
+  el.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => {
+    if(!(await showConfirm('Delete this client? JV lines tagged to it stay in the books but lose the tag.'))) return;
+    state.entries.forEach(e=>{ if(e.auditClientId===b.dataset.d){ e.auditClientId=null; e.auditRole=null; } });
+    state.auditClients = state.auditClients.filter(x => x.id !== b.dataset.d);
+    save(); renderAll();
+  });
+}
+
+/* ---------------- Settings Panel ---------------- */
+function renderSettings(){
+  const el = document.getElementById('panel-settings');
+  el.innerHTML = `
+    <div class="card">
+      <h3>Sidebar & Brand Name Settings</h3>
+      <div class="grid yr" style="margin-bottom:12px">
+        <div><label>Business / Company Name (Top Left)</label><input id="setCoName" value="${pref.companyName||''}"></div>
+        <div><label>Show Brand in Sidebar?</label>
+          <select id="setShowBrand">
+            <option value="1" ${pref.showBrandSidebar!==false?'selected':''}>Yes (Show)</option>
+            <option value="0" ${pref.showBrandSidebar===false?'selected':''}>No (Hide)</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid set" style="margin-bottom:12px">
+        <div><label>Subtitle / Books Text</label><input id="setSubText" value="${pref.subTitleText||''}"></div>
+        <div><label>Tag / Tracker Text</label><input id="setTagText" value="${pref.tagText||''}"></div>
+      </div>
+      <button class="btn-primary" id="saveBrandBtn">Save Brand Settings</button>
+    </div>
+
+    <div class="card">
+      <h3>${t('numberFmt')}</h3>
+      <div class="grid set">
+        <div><label>${t('currLbl')}</label><input id="setCurr" value="${pref.currencySymbol||'PKR'}"></div>
+        <div><label>${t('decimalsLbl')}</label><select id="setDec"><option value="0" ${pref.decimals===0?'selected':''}>0</option><option value="2" ${pref.decimals===2?'selected':''}>2</option></select></div>
+        <div><label>${t('scaleLbl')}</label><select id="setScale">
+          <option value="1" ${pref.amountScale==='1'?'selected':''}>Exact (1)</option>
+          <option value="1000" ${pref.amountScale==='1000'?'selected':''}>Thousands ('000)</option>
+          <option value="1000000" ${pref.amountScale==='1000000'?'selected':''}>Millions (M)</option>
+        </select></div>
+        <div><label>${t('compLbl')}</label><select id="setComp"><option value="1" ${pref.showComparative?'selected':''}>Yes</option><option value="0" ${!pref.showComparative?'selected':''}>No</option></select></div>
+      </div>
+      <div style="margin-top:10px"><button class="btn-primary" id="saveNumBtn">${t('save')}</button></div>
+    </div>
+
+    <div class="card">
+      <h3>${t('customTextLbl')}</h3>
+      <div class="grid set">
+        <div><label>P&amp;L Title</label><input id="txtPL" value="${pref.txtPL||''}"></div>
+        <div><label>Balance Sheet Title</label><input id="txtBS" value="${pref.txtBS||''}"></div>
+        <div><label>Cash Flow Title</label><input id="txtCF" value="${pref.txtCF||''}"></div>
+        <div><label>Trial Balance Title</label><input id="txtTB" value="${pref.txtTB||''}"></div>
+      </div>
+      <div style="margin-top:10px"><button class="btn-primary" id="saveTxtBtn">${t('save')}</button></div>
+    </div>`;
+
+  enhanceSelect(el.querySelector('#setShowBrand'));
+  enhanceSelect(el.querySelector('#setDec'));
+  enhanceSelect(el.querySelector('#setScale'));
+  enhanceSelect(el.querySelector('#setComp'));
+
+  el.querySelector('#saveBrandBtn').onclick = ()=>{
+    pref.companyName = el.querySelector('#setCoName').value.trim();
+    pref.showBrandSidebar = el.querySelector('#setShowBrand').value === '1';
+    pref.subTitleText = el.querySelector('#setSubText').value.trim();
+    pref.tagText = el.querySelector('#setTagText').value.trim();
+    savePref(); renderAll(); showToast('Brand settings saved.');
+  };
+
+  el.querySelector('#saveNumBtn').onclick = ()=>{
+    pref.currencySymbol = el.querySelector('#setCurr').value.trim();
+    pref.decimals = parseInt(el.querySelector('#setDec').value);
+    pref.amountScale = el.querySelector('#setScale').value;
+    pref.showComparative = el.querySelector('#setComp').value==='1';
+    savePref(); renderAll(); showToast('Number formatting saved.');
+  };
+
+  el.querySelector('#saveTxtBtn').onclick = ()=>{
+    pref.txtPL = el.querySelector('#txtPL').value.trim();
+    pref.txtBS = el.querySelector('#txtBS').value.trim();
+    pref.txtCF = el.querySelector('#txtCF').value.trim();
+    pref.txtTB = el.querySelector('#txtTB').value.trim();
+    savePref(); renderAll(); showToast('Custom texts saved.');
+  };
+}
+
+renderAll();
+</script>
+<script>
+// PWA: offline support + ask browser to keep data safe from auto-cleanup
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}
+if (navigator.storage && navigator.storage.persist) {
+  navigator.storage.persist().catch(function () {});
+}
+</script>
+</body>
+</html>
