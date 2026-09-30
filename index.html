@@ -2158,6 +2158,7 @@ async function bootApp(){
 }
 bootApp();
 </script>
+<script src="config.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -2173,16 +2174,8 @@ const CLOUD = window.__cloud;
    (2) restricting the API key to your website address in Google Cloud Console. Optional override: define
    window.KHATA_CONFIG = {googleClientId:'...', firebase:{...}} before this script. ---- */
 const KHATA_DEFAULT_CONFIG = {
-  googleClientId: '539060012563-quokfjku8f1m98lekljmvmi6o45ian3e.apps.googleusercontent.com',
-  firebase: {
-    apiKey: 'AIzaSyCT7crNv3baTB58MtLnl4h-KocYEW0M0JY',
-    authDomain: 'khat-d682e.firebaseapp.com',
-    projectId: 'khat-d682e',
-    storageBucket: 'khat-d682e.firebasestorage.app',
-    messagingSenderId: '539060012563',
-    appId: '1:539060012563:web:ec5db5755ff7f9a86761e6',
-    measurementId: 'G-600S8Y2K3P'
-  }
+  googleClientId: 'YOUR_GOOGLE_CLIENT_ID',
+  firebase: { apiKey: 'YOUR_API_KEY' }
 };
 const KHATA_CFG = {
   googleClientId: (window.KHATA_CONFIG && window.KHATA_CONFIG.googleClientId) || KHATA_DEFAULT_CONFIG.googleClientId,
@@ -2398,7 +2391,8 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
   const FB = KHATA_CFG.firebase;
   if (!window.firebase || !FB || /^YOUR_/.test(FB.apiKey || '')) {
     window.__cloudOff = true;   // offline / script blocked: app still works locally
-    const off = async () => { await showAlert('Cloud sync could not start. Check your internet connection and reload the app.'); };
+    const noCfg = !FB || /^YOUR_/.test((FB && FB.apiKey) || '');
+    const off = async () => { await showAlert(noCfg ? 'Cloud sync is not configured. config.js is missing or its keys are empty. Upload config.js next to index.html and reload.' : 'Cloud sync could not start. Check your internet connection and reload the app.'); };
     window.syncLogin = off; window.syncSwitch = off; window.syncLogout = off;
     return;
   }
@@ -2559,10 +2553,17 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
     const c = e.code || '';
     if (c === 'auth/unauthorized-domain') return 'This website address is not authorised for sign-in. Add it in Firebase Console: Authentication, Settings, Authorized Domains.';
     if (c === 'auth/network-request-failed') return 'No internet connection. Connect and try again.';
-    return e.message;
+    if (c === 'auth/operation-not-allowed') return 'Google sign-in is not enabled. Firebase Console: Authentication, Sign-in method, enable Google.';
+    if (c === 'auth/invalid-api-key' || c === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.') return 'The Firebase API key is wrong or restricted. Check config.js and the key restrictions in Google Cloud Console.';
+    if (c === 'auth/web-storage-unsupported') return 'Browser storage is blocked (private mode or cookies disabled). Allow site data and try again.';
+    if (c === 'auth/popup-blocked') return 'The sign-in popup was blocked. Allow popups for this site and try again.';
+    if (c === 'auth/too-many-requests') return 'Too many attempts. Wait a few minutes and try again.';
+    if (c === 'auth/internal-error') return 'Google sign-in failed internally. Check that the site is opened over https and that this domain is authorised in Firebase.';
+    return (c ? c + ': ' : '') + e.message;
   };
   window.syncLogin = async function (email) {
     if (!online()) { await showAlert('You are offline. Connect to the internet to sign in. Your data on this device keeps working.'); return; }
+    if (!/^https:$/.test(location.protocol) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) { await showAlert('Google sign-in needs the app opened from its https web address (not as a local file).'); return; }
     try { await auth.signInWithPopup(provider(email)); }
     catch (e) {
       const c = e.code || '';
