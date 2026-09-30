@@ -276,9 +276,20 @@ html,body{max-width:100%;overflow-x:hidden}
   .csel-item{padding:13px 12px;font-size:15px}
   input[type=checkbox]{width:22px!important;height:22px;min-height:22px}
 }
+#lockScreen{display:none;position:fixed;inset:0;z-index:9995;background:var(--navy);color:#f5f1e4;align-items:center;justify-content:center;padding:24px;text-align:center;overflow-y:auto}
+body.locked #lockScreen{display:flex}
+body.locked>.mbar,body.locked>.app,body.locked>.mnav{display:none!important}
+#lockScreen .lk-card{width:100%;max-width:340px}
+#lockScreen h1{font-family:var(--f-head);font-size:30px;margin-bottom:4px}
+#lockScreen .lk-sub{color:var(--gold);font-size:13px;margin-bottom:22px;line-height:1.4}
+#lockScreen input{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.28);text-align:center;font-size:20px;letter-spacing:3px;min-height:52px;font-family:var(--f-num)}
+#lockScreen .lk-btn{width:100%;margin-top:12px;min-height:50px;font-size:15px;background:var(--gold);border-color:var(--gold);color:#fff}
+#lockScreen .lk-err{color:#f0a9a0;min-height:20px;margin-top:10px;font-size:13px}
+#lockScreen .lk-link{background:none;border:none;color:#a9a08a;text-decoration:underline;margin-top:20px;font-size:12.5px}
+@media print{#lockScreen{display:none!important}}
 </style>
 </head>
-<body>
+<body class="locked">
 <header class="mbar no-print">
   <div class="mb-txt"><div class="n" id="mBrandName">Khata</div><div class="s" id="mBrandSub"></div></div>
   <button type="button" id="mSettingsBtn" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
@@ -326,22 +337,36 @@ html,body{max-width:100%;overflow-x:hidden}
     </div>
     <div id="panels"></div>
     <div id="singlePrintHolder"></div>
+  </main>
+</div>
+<nav class="mnav no-print" id="mnav" aria-label="Main navigation"></nav>
+<div id="lockScreen" class="no-print" role="dialog" aria-modal="true" aria-label="Unlock">
+  <div class="lk-card">
+    <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gold);margin-bottom:10px"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+    <h1>Khata</h1>
+    <div class="lk-sub" id="lockHint">Enter Your Passcode To Unlock</div>
+    <input type="password" id="lockPin" autocomplete="off" placeholder="Passcode" aria-label="Passcode">
+    <button type="button" class="btn-primary lk-btn" id="lockBtn">Unlock</button>
+    <div class="lk-err" id="lockErr" role="alert"></div>
+    <button type="button" class="lk-link" id="lockForgot">Forgot Passcode? Erase Data On This Device</button>
+  </div>
+</div>
     <div id="modalOverlay" class="modal-overlay no-print" role="alertdialog" aria-modal="true">
       <div class="modal-card">
         <div id="modalMsg" class="modal-msg"></div>
         <div id="modalBtns" class="modal-btns"></div>
       </div>
     </div>
-  </main>
-</div>
-<nav class="mnav no-print" id="mnav" aria-label="Main navigation"></nav>
 <div class="sheet-overlay no-print" id="moreSheet"><div class="sheet" id="moreSheetBody"></div></div>
 
 <script>
 const LS_KEY='khata_v5', LS_PREF='khata_pref_v6', LS_DEV='khata_dev_v1';
-const DEV_FIELDS = ['theme','lang','tab','tbView']; // per-device; never synced
+const DEV_FIELDS = ['theme','lang','tab','tbView','autoLockMin']; // per-device; never synced
 function uid(){ return Math.random().toString(36).slice(2,9); }
-const LS_LOGO='khata_logo_v1'; const getLogo=()=>localStorage.getItem(LS_LOGO)||'';
+const LS_LOGO='khata_logo_v1', LS_LOCK='khata_lock_v1', LS_ATT='khata_att_v1'; let LOGO_CACHE=''; const getLogo=()=>LOGO_CACHE;
+const ISO_DATE=/^\d{4}-\d{2}-\d{2}$/;
+const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shortYearH=n=>esc(shortYear(n));
 let IMP_BAD=[];
 const isLocked=d=>!!(pref.lockDate&&d&&d<=pref.lockDate);
 async function lockBlocked(dates){
@@ -366,7 +391,9 @@ function showPreview(title, validText, bad){
   });
 }
 
-let state = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+let state = null;
+function initState(obj){
+  state = obj;
 if(!state || !state.years){
   const yId = uid();
   state = { years:[{id:yId,name:'FY 2025'}], currentYearId:yId, accounts:[], entries:[], auditClients:[], cashRecon:[], cashCounts:[] };
@@ -385,6 +412,8 @@ state.auditClients.forEach(cl=>{
   }
 });
 
+}
+
 let defaultPref = {
   theme:'light',
   lang:'en',
@@ -400,6 +429,7 @@ let defaultPref = {
   showComparative:true,
   retainedEarningsMode:'split',
   lockDate:'',
+  autoLockMin:'5',
   txtPL:'Profit & Loss Statement',
   txtBS:'Balance Sheet',
   txtCF:'Cash Flow Statement',
@@ -412,7 +442,7 @@ let defaultPref = {
 };
 
 function _lsJSON(k){ try{ return JSON.parse(localStorage.getItem(k) || '{}') || {}; }catch(e){ return {}; } }
-let pref = Object.assign({}, defaultPref, _lsJSON(LS_PREF), _lsJSON(LS_DEV));
+let pref = Object.assign({}, defaultPref, _lsJSON(LS_DEV));
 
 const DICT = {
   en: {
@@ -505,13 +535,51 @@ const TYPES = ['Asset','Liability','Equity','Income','Expense'];
 const CF_CATS = ['Operating','Investing','Financing'];
 function normalIsDebit(type){ return type==='Asset'||type==='Expense'; }
 function isPL(acc){ return acc.type==='Income'||acc.type==='Expense'; }
-function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+
+/* =====================================================================
+   ENCRYPTION AT REST: AES-256-GCM, key derived from the passcode (PBKDF2-SHA256, 250k rounds).
+   Stored values look like "enc1:" + base64(salt16 + iv12 + ciphertext). Because the salt travels inside
+   each value, cloud sync and Drive backups carry only ciphertext and any device with the same passcode can open them.
+   ===================================================================== */
+const KCRYPT=(function(){
+  const te=new TextEncoder(), td=new TextDecoder(), P='enc1:', ITER=250000, cache=new Map();
+  let pin=null, salt=null;
+  const b64=u=>{ let s=''; for(let i=0;i<u.length;i++) s+=String.fromCharCode(u[i]); return btoa(s); };
+  const ub=t=>{ const s=atob(t), u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; };
+  const parts=env=>{ const raw=ub(env.slice(P.length)); return {sb:raw.slice(0,16), iv:raw.slice(16,28), ct:raw.slice(28)}; };
+  const derive=async(p,sb)=>{ const km=await crypto.subtle.importKey('raw',te.encode(p),'PBKDF2',false,['deriveKey']);
+    return crypto.subtle.deriveKey({name:'PBKDF2',salt:sb,iterations:ITER,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']); };
+  const getKey=async sb=>{ const id=b64(sb); let k=cache.get(id); if(!k){ k=await derive(pin,sb); cache.set(id,k); } return k; };
+  return {
+    supported:()=>!!(window.crypto&&crypto.subtle),
+    isEnc:v=>typeof v==='string'&&v.startsWith(P),
+    active:()=>pin!==null,
+    checkPin:p=>p===pin,
+    async setup(p){ pin=p; cache.clear(); salt=crypto.getRandomValues(new Uint8Array(16)); await getKey(salt); },
+    clear(){ pin=null; salt=null; cache.clear(); },
+    async unlock(p,env){ try{ const {sb,iv,ct}=parts(env); const k=await derive(p,sb); await crypto.subtle.decrypt({name:'AES-GCM',iv},k,ct);
+      pin=p; cache.clear(); cache.set(b64(sb),k); salt=sb; return true; }catch(e){ return false; } },
+    async encrypt(txt){ const iv=crypto.getRandomValues(new Uint8Array(12)), k=await getKey(salt);
+      const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,te.encode(txt)));
+      const out=new Uint8Array(28+ct.length); out.set(salt,0); out.set(iv,16); out.set(ct,28); return P+b64(out); },
+    async decrypt(env){ const {sb,iv,ct}=parts(env), k=await getKey(sb); return td.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv},k,ct)); }
+  };
+})();
+let _saveQ=Promise.resolve();
+function flushSaves(){ return _saveQ; }
+function writeSecure(k,str){
+  _saveQ=_saveQ.then(async()=>{ localStorage.setItem(k, KCRYPT.active()? await KCRYPT.encrypt(str) : str); }).catch(e=>console.error('Save failed',e));
+  return _saveQ;
+}
+async function readSecure(k){ const v=localStorage.getItem(k); if(v==null) return null; return KCRYPT.isEnc(v)? await KCRYPT.decrypt(v) : v; }
+let _lastPrefStr=null;
+function save(){ writeSecure(LS_KEY, JSON.stringify(state)); }
 function savePref(){
   const dev = {}, syn = {};
   Object.keys(pref).forEach(k=>{ (DEV_FIELDS.includes(k) ? dev : syn)[k] = pref[k]; });
   localStorage.setItem(LS_DEV, JSON.stringify(dev));   // device-only: does not trigger cloud sync
   const str = JSON.stringify(syn);
-  if(localStorage.getItem(LS_PREF) !== str) localStorage.setItem(LS_PREF, str); // brand name, formats, titles: synced
+  if(_lastPrefStr !== str){ _lastPrefStr = str; writeSecure(LS_PREF, str); } // brand name, formats, titles: synced
 }
 
 function fmt(n, raw=false){
@@ -528,7 +596,7 @@ function fmt(n, raw=false){
 }
 
 function getHeaderUnitNote(){
-  const sym = pref.currencySymbol || 'PKR';
+  const sym = esc(pref.currencySymbol || 'PKR');
   if(pref.amountScale === '1000') return `(Amounts in ${sym} '000)`;
   if(pref.amountScale === '1000000') return `(Amounts in ${sym} Million)`;
   return `(Amounts in ${sym})`;
@@ -588,7 +656,7 @@ const AUDIT_ROLE_LABEL = {exp:'Expense', firm:'Firm Allowance', client:'Client A
 function auditTagBadge(l){
   if(!l.auditClientId || !l.auditRole) return '';
   const cl = state.auditClients.find(x=>x.id===l.auditClientId);
-  return ` <span class="tag" style="color:var(--gold);border-color:var(--gold)">${cl?cl.clientName:'Client'} · ${AUDIT_ROLE_LABEL[l.auditRole]||''}</span>`;
+  return ` <span class="tag" style="color:var(--gold);border-color:var(--gold)">${esc(cl?cl.clientName:'Client')} · ${AUDIT_ROLE_LABEL[l.auditRole]||''}</span>`;
 }
 function auditClientAmounts(cl){
   const legs = state.entries.filter(e=>e.auditClientId===cl.id);
@@ -619,7 +687,7 @@ function enhanceSelect(select){
   document.body.appendChild(list); // portal: removed when its select leaves the DOM (see pruneLists)
   const sync = ()=>{
     const opt = select.options[select.selectedIndex];
-    btn.innerHTML = `<span>${opt?opt.textContent:''}</span><span class="csel-arrow">▾</span>`;
+    btn.textContent=''; const s1=document.createElement('span'); s1.textContent=opt?opt.textContent:''; const s2=document.createElement('span'); s2.className='csel-arrow'; s2.textContent='▾'; btn.append(s1,s2);
     list.querySelectorAll('.csel-item').forEach(it=>it.classList.toggle('active', it.dataset.value===select.value));
   };
   const position = ()=>{
@@ -720,7 +788,7 @@ function renderShell(){
   document.getElementById('pageTitle').textContent = currentTabObj ? t(currentTabObj[1]) : '';
 
   const ys = document.getElementById('yearSel');
-  ys.innerHTML = state.years.map(y=>`<option value="${y.id}" ${state.currentYearId===y.id?'selected':''}>${y.name}</option>`).join('');
+  ys.innerHTML = state.years.map(y=>`<option value="${y.id}" ${state.currentYearId===y.id?'selected':''}>${esc(y.name)}</option>`).join('');
   ys.onchange = ()=>{ state.currentYearId = ys.value; save(); renderAll(); };
   enhanceSelect(ys);
 
@@ -809,14 +877,14 @@ function renderYears(){
   const el = document.getElementById('panel-years'); const y = editYr;
   el.innerHTML = `<div class="card"><h3>${y ? t('editYr') : t('addYr')}</h3>
     <div class="grid yr">
-      <div><label>${t('yrName')}</label><input id="yrName" placeholder="e.g. FY 2025" value="${y?y.name:''}"></div>
+      <div><label>${t('yrName')}</label><input id="yrName" placeholder="e.g. FY 2025" value="${esc(y?y.name:'')}"></div>
       <div style="align-self:end"><button class="btn-primary" id="yrSaveBtn">${y?t('save'):t('addYr')}</button></div>
       <div style="align-self:end">${y?`<button class="btn-ghost" id="yrCancelBtn">${t('cancel')}</button>`:''}</div>
     </div><div id="yrErr" class="err"></div>
     <p class="small" style="margin-top:8px">Years determine opening/closing balances - add in chronological order.</p></div>
   <div class="card"><h3>Years (${state.years.length})</h3>
   <table><thead><tr><th>Name</th><th>Sequence</th><th></th></tr></thead>
-  <tbody>${state.years.map((yr,i)=>`<tr><td>${yr.name}${state.currentYearId===yr.id?' <span class="tag" style="color:var(--gold);border-color:var(--gold)">Active</span>':''}</td>
+  <tbody>${state.years.map((yr,i)=>`<tr><td>${esc(yr.name)}${state.currentYearId===yr.id?' <span class="tag" style="color:var(--gold);border-color:var(--gold)">Active</span>':''}</td>
   <td class="small">${i+1}</td><td class="btn-group">
   <button class="rowbtn" data-up="${yr.id}" title="Move earlier" ${i===0?'disabled':''}>↑</button>
   <button class="rowbtn" data-down="${yr.id}" title="Move later" ${i===state.years.length-1?'disabled':''}>↓</button>
@@ -862,7 +930,7 @@ function renderAccounts(){
   const el = document.getElementById('panel-accounts'); const a = editAcc;
   el.innerHTML = `<div class="card"><h3>${a?'Edit Account':'Add Account'}</h3>
     <div class="grid acc">
-      <div><label>Account Name</label><input id="accName" value="${a?a.name:''}"></div>
+      <div><label>Account Name</label><input id="accName" value="${esc(a?a.name:'')}"></div>
       <div><label>Type</label><select id="accType">${TYPES.map(t=>`<option ${a&&a.type===t?'selected':''}>${t}</option>`).join('')}</select></div>
       <div><label>Cash/Bank?</label><select id="accCash"><option value="0" ${a&&!a.isCash?'selected':''}>No</option><option value="1" ${a&&a.isCash?'selected':''}>Yes</option></select></div>
       <div id="cfWrap"><label>Cash Flow Category</label><select id="accCf">${CF_CATS.map(c=>`<option ${a&&a.cf===c?'selected':''}>${c}</option>`).join('')}</select></div>
@@ -924,7 +992,7 @@ function renderAccounts(){
   if(!state.accounts.length){ wrap.innerHTML=`<p class="empty">${t('noAcc')}</p>`; return; }
   wrap.innerHTML = `<table><thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Cash?</th><th>CF Cat.</th><th class="num">Balance ${getHeaderUnitNote()}</th><th></th></tr></thead>
   <tbody>${state.accounts.map(ac=>{ const b=balanceFor(ac, selIdx());
-    return `<tr><td><span class="code-badge">${acctCode(ac)}</span></td><td>${ac.name}</td><td><span class="tag ${ac.type}">${ac.type}</span></td><td>${ac.isCash?'Yes':'-'}</td><td>${ac.isCash?'-':ac.cf}</td>
+    return `<tr><td><span class="code-badge">${acctCode(ac)}</span></td><td>${esc(ac.name)}</td><td><span class="tag ${ac.type}">${ac.type}</span></td><td>${ac.isCash?'Yes':'-'}</td><td>${ac.isCash?'-':ac.cf}</td>
     <td class="num">${fmt(b.net)}</td><td class="btn-group"><button class="rowbtn" data-e="${ac.id}" title="Edit">${t('edit')}</button>
     <button class="rowbtn danger" data-d="${ac.id}" title="Delete">${t('delete')}</button></td></tr>`; }).join('')}</tbody></table>`;
   wrap.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{ editAcc=accById(b.dataset.e); renderAll(); scrollToPanelTop('panel-accounts'); });
@@ -945,12 +1013,12 @@ function vouchersForYear(idx){
 
 function renderJournal(){
   const el = document.getElementById('panel-journal'); const idx = selIdx();
-  const opts = state.accounts.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
-  el.innerHTML = `<div class="card"><h3>${editingVoucher?'Edit Voucher '+editingVoucher:'New Journal Voucher'} <span class="small">${state.years[idx]?.name||''}</span></h3>
+  const opts = state.accounts.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  el.innerHTML = `<div class="card"><h3>${editingVoucher?'Edit Voucher '+editingVoucher:'New Journal Voucher'} <span class="small">${esc(state.years[idx]?.name||'')}</span></h3>
   ${!state.accounts.length ? `<p class="empty">${t('noAcc')}</p>` : `
   <div class="grid" style="grid-template-columns:160px 1fr">
     <div><label>Date</label><input type="date" id="vDate" value="${draft.date||new Date().toISOString().slice(0,10)}"></div>
-    <div><label>Narration</label><input id="vNar" value="${draft.narration||''}"></div>
+    <div><label>Narration</label><input id="vNar" value="${esc(draft.narration||'')}"></div>
   </div>
   <div class="grid" style="grid-template-columns:1fr 120px 140px auto;margin-top:10px">
     <div><label>Account</label><select id="lnAcc">${opts}</select></div>
@@ -959,7 +1027,7 @@ function renderJournal(){
     <div style="align-self:end"><button class="btn-ghost" id="addLineBtn" style="width:100%">+ Add Line</button></div>
   </div>
   <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:8px;max-width:520px">
-    <div><label>Audit Client (optional)</label><select id="lnClient"><option value="">None</option>${auditClientsForYear().map(c=>`<option value="${c.id}">${c.clientName}</option>`).join('')}</select></div>
+    <div><label>Audit Client (optional)</label><select id="lnClient"><option value="">None</option>${auditClientsForYear().map(c=>`<option value="${c.id}">${esc(c.clientName)}</option>`).join('')}</select></div>
     <div><label>Tag as</label><select id="lnRole"><option value="exp">My Expense</option><option value="firm">Firm Allowance</option><option value="client">Client Allowance</option></select></div>
   </div>
   <div id="draftLinesWrap" style="margin-top:12px"></div>
@@ -980,7 +1048,7 @@ function renderJournal(){
   <div class="card">
     <h3>Vouchers - ${vouchersForYear(idx).length} in this year</h3>
     <div class="searchbar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <input id="jeSearch" placeholder="Search voucher # or narration..." value="${jeFilter}">
+      <input id="jeSearch" placeholder="Search voucher # or narration..." value="${esc(jeFilter)}">
       <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted);text-transform:none;font-weight:400"><input type="checkbox" id="selAllChk" style="width:auto"> Select all</label>
       <button class="rowbtn danger" id="bulkDeleteBtn" disabled>Delete Selected (<span id="selCount">0</span>)</button>
       <button class="btn-ghost btn-sm" id="renumberBtn" style="margin-left:auto">Renumber Vouchers (1, 2, 3…)</button>
@@ -994,7 +1062,7 @@ function renderJournal(){
       const w = el.querySelector('#draftLinesWrap');
       if(!draft.lines.length){ w.innerHTML='<p class="empty">No lines added yet. Minimum 2 lines required.</p>'; }
       else { w.innerHTML = `<table><thead><tr><th>Account Code</th><th>Account Name</th><th class="num">Debit ${getHeaderUnitNote()}</th><th class="num">Credit ${getHeaderUnitNote()}</th><th></th></tr></thead>
-        <tbody>${draft.lines.map((l,i)=>`<tr><td><span class="code-badge">${acode(l.accId)}</span></td><td>${accById(l.accId)?.name||'-'}${auditTagBadge(l)}</td><td class="num">${l.dr?fmt(l.dr):''}</td>
+        <tbody>${draft.lines.map((l,i)=>`<tr><td><span class="code-badge">${acode(l.accId)}</span></td><td>${esc(accById(l.accId)?.name||'-')}${auditTagBadge(l)}</td><td class="num">${l.dr?fmt(l.dr):''}</td>
         <td class="num">${l.cr?fmt(l.cr):''}</td><td><button class="rowbtn danger" data-i="${i}">Remove</button></td></tr>`).join('')}</tbody></table>`;
         w.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ draft.lines.splice(parseInt(b.dataset.i),1); renderLines(); renderTotals(); }); }
     };
@@ -1066,7 +1134,7 @@ function renderJournal(){
           const acc = state.accounts.find(a=>a.name.toLowerCase()===accName.toLowerCase());
           const d = parseFloat(row.debit || row.dr) || 0;
           const c = parseFloat(row.credit || row.cr) || 0;
-          if(!acc || (!d && !c) || !g.date || isLocked(g.date)){ ok=false; why=!acc?'Unknown account "'+accName+'"':(!g.date?'Missing date':(isLocked(g.date)?'Date is in the locked period':'Missing amount')); return; }
+          if(!acc || (!d && !c) || !ISO_DATE.test(g.date) || isLocked(g.date)){ ok=false; why=!acc?'Unknown account "'+accName+'"':(!ISO_DATE.test(g.date)?'Invalid Or Missing Date (Use YYYY-MM-DD)':(isLocked(g.date)?'Date is in the locked period':'Missing amount')); return; }
           legs.push({accId:acc.id, dr:d, cr:c}); sd+=d; sc+=c;
         });
         if(!ok || !yObj || legs.length<1 || Math.abs(sd-sc)>0.005){ skipped += g.rows.length; IMP_BAD.push((g.vRaw||'Voucher')+': '+(why||(Math.abs(sd-sc)>0.005?'Unbalanced debits/credits ('+sd.toFixed(2)+' vs '+sc.toFixed(2)+')':'Invalid data'))); return; }
@@ -1132,21 +1200,21 @@ function renderVoucherList(el, idx){
   wrap.innerHTML = list.map(v=>{
     const totDr = v.legs.reduce((s,l)=>s+l.dr,0);
     return `<div class="voucher-block"><div class="vhead"><span style="display:flex;align-items:center;gap:8px">
-    <input type="checkbox" class="vchk" data-v="${v.voucher}" style="width:auto" ${selectedVouchers.has(v.voucher)?'checked':''}>
-    <span class="vid">${v.voucher}</span> · ${v.date} ${v.narration?'- '+v.narration:''}</span>
-    <span class="btn-group"><button class="rowbtn" data-pdf="${v.voucher}">PDF</button><button class="rowbtn" data-xls="${v.voucher}">Excel</button><button class="rowbtn" data-e="${v.voucher}" title="Edit">${t('edit')}</button><button class="rowbtn danger" data-d="${v.voucher}" title="Delete">${t('delete')}</button></span></div>
+    <input type="checkbox" class="vchk" data-v="${esc(v.voucher)}" style="width:auto" ${selectedVouchers.has(v.voucher)?'checked':''}>
+    <span class="vid">${esc(v.voucher)}</span> · ${esc(v.date)} ${v.narration?'- '+esc(v.narration):''}</span>
+    <span class="btn-group"><button class="rowbtn" data-pdf="${esc(v.voucher)}">PDF</button><button class="rowbtn" data-xls="${esc(v.voucher)}">Excel</button><button class="rowbtn" data-e="${esc(v.voucher)}" title="Edit">${t('edit')}</button><button class="rowbtn danger" data-d="${esc(v.voucher)}" title="Delete">${t('delete')}</button></span></div>
     <table>
       <thead><tr><th>Account Code</th><th>Account Name</th><th class="num">Debit ${getHeaderUnitNote()}</th><th class="num">Credit ${getHeaderUnitNote()}</th></tr></thead>
-      <tbody>${v.legs.map(l=>`<tr><td><span class="code-badge">${acode(l.accId)}</span></td><td>${accById(l.accId)?.name||'-'}${auditTagBadge(l)}</td><td class="num">${l.dr?fmt(l.dr):''}</td><td class="num">${l.cr?fmt(l.cr):''}</td></tr>`).join('')}</tbody>
+      <tbody>${v.legs.map(l=>`<tr><td><span class="code-badge">${acode(l.accId)}</span></td><td>${esc(accById(l.accId)?.name||'-')}${auditTagBadge(l)}</td><td class="num">${l.dr?fmt(l.dr):''}</td><td class="num">${l.cr?fmt(l.cr):''}</td></tr>`).join('')}</tbody>
       <tfoot><tr><td colspan="2">${t('total')}</td><td class="num">${fmt(totDr)}</td><td class="num">${fmt(totDr)}</td></tr></tfoot>
     </table></div>`;
   }).join('');
   wrap.querySelectorAll('[data-pdf]').forEach(b=>b.onclick=()=>{
     const v = list.find(x=>x.voucher===b.dataset.pdf);
     const totDr = v.legs.reduce((s,l)=>s+l.dr,0);
-    const html = `<div class="report-head"><div class="title">Journal Voucher ${v.voucher}</div><div class="sub">${v.date}${v.narration?' - '+v.narration:''}</div></div>
+    const html = `<div class="report-head"><div class="title">Journal Voucher ${esc(v.voucher)}</div><div class="sub">${esc(v.date)}${v.narration?' - '+esc(v.narration):''}</div></div>
     <table><thead><tr><th>Account Code</th><th>Account Name</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead>
-    <tbody>${v.legs.map(l=>`<tr><td>${acode(l.accId)}</td><td>${accById(l.accId)?.name||'-'}</td><td class="num">${l.dr?fmt(l.dr):''}</td><td class="num">${l.cr?fmt(l.cr):''}</td></tr>`).join('')}</tbody>
+    <tbody>${v.legs.map(l=>`<tr><td>${acode(l.accId)}</td><td>${esc(accById(l.accId)?.name||'-')}</td><td class="num">${l.dr?fmt(l.dr):''}</td><td class="num">${l.cr?fmt(l.cr):''}</td></tr>`).join('')}</tbody>
     <tfoot><tr><td colspan="2">Total</td><td class="num">${fmt(totDr)}</td><td class="num">${fmt(totDr)}</td></tr></tfoot></table>`;
     printSingle(html);
   });
@@ -1196,12 +1264,12 @@ function renderLedgers(){
   const el = document.getElementById('panel-ledgers'); const idx = selIdx();
   if(!state.accounts.length){ el.innerHTML=`<div class="card"><p class="empty">${t('noAcc')}</p></div>`; return; }
   el.innerHTML = `<div class="report-head">
-    <div class="co">${pref.companyName||''}</div>
+    <div class="co">${esc(pref.companyName||'')}</div>
     <div class="title">${t('ledgers')}</div>
-    <div class="sub">${shortYear(state.years[idx]?.name)||''}</div>
+    <div class="sub">${shortYearH(state.years[idx]?.name)||''}</div>
     <div class="unit-note" style="font-size:11px;color:var(--muted);font-style:italic;margin-top:4px">${getHeaderUnitNote()}</div>
   </div>
-  <div class="searchbar no-print" style="margin-bottom:14px"><input id="ledgerSearch" placeholder="Search by account name or code…" value="${ledgerFilter}"></div>
+  <div class="searchbar no-print" style="margin-bottom:14px"><input id="ledgerSearch" placeholder="Search by account name or code…" value="${esc(ledgerFilter)}"></div>
   <div id="ledgerCardsWrap"></div>`;
   el.querySelector('#ledgerSearch').oninput = (ev)=>{ ledgerFilter = ev.target.value; renderLedgerCards(idx); };
   renderLedgerCards(idx);
@@ -1215,18 +1283,18 @@ function renderLedgerCards(idx){
     if(!rows.length && opening===0) return '';
     const tableHtml = `<table><thead><tr><th>Date</th><th>Voucher #</th><th>Against Account</th><th>Narration</th><th class="num">${t('dr')}</th><th class="num">${t('cr')}</th><th class="num">Running Balance</th></tr></thead>
     <tbody>${!isPL(a) ? `<tr><td colspan="6">Balance Brought Forward</td><td class="num">${fmt(opening)}</td></tr>`:''}
-    ${rows.map(r=>`<tr><td>${r.date}</td><td>${r.voucher}</td><td>${r.against}</td><td>${esc(r.narration)}</td><td class="num">${r.dr?fmt(r.dr):''}</td><td class="num">${r.cr?fmt(r.cr):''}</td><td class="num">${fmt(r.bal)}</td></tr>`).join('')}</tbody></table>`;
-    return `<div class="card"><h3><span><span class="code-badge">${acctCode(a)}</span>${a.name} <span class="tag ${a.type}">${a.type} · Closing ${fmt(closing)}</span></span>
+    ${rows.map(r=>`<tr><td>${esc(r.date)}</td><td>${esc(r.voucher)}</td><td>${esc(r.against)}</td><td>${esc(r.narration)}</td><td class="num">${r.dr?fmt(r.dr):''}</td><td class="num">${r.cr?fmt(r.cr):''}</td><td class="num">${fmt(r.bal)}</td></tr>`).join('')}</tbody></table>`;
+    return `<div class="card"><h3><span><span class="code-badge">${acctCode(a)}</span>${esc(a.name)} <span class="tag ${a.type}">${a.type} · Closing ${fmt(closing)}</span></span>
     <span class="controls no-print"><button class="rowbtn" data-pdf="${a.id}">PDF</button><button class="rowbtn" data-xls="${a.id}">Excel</button></span></h3>
     ${tableHtml}</div>`;
   }).join('');
   wrap.innerHTML = cards || `<div class="card"><p class="empty">${t('noEntries')}</p></div>`;
   wrap.querySelectorAll('[data-pdf]').forEach(b=>b.onclick=()=>{
     const a = accById(b.dataset.pdf); const idxN = selIdx(); const {rows, opening, closing} = ledgerCardData(a, idxN);
-    const html = `<div class="report-head"><div class="title">${acctCode(a)} · ${a.name}</div><div class="sub">${a.type} - ${shortYear(state.years[idxN]?.name)||''}</div></div>
+    const html = `<div class="report-head"><div class="title">${acctCode(a)} · ${esc(a.name)}</div><div class="sub">${a.type} - ${shortYearH(state.years[idxN]?.name)||''}</div></div>
     <table><thead><tr><th>Date</th><th>Voucher #</th><th>Against Account</th><th>Narration</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Running Balance</th></tr></thead>
     <tbody>${!isPL(a) ? `<tr><td colspan="6">Balance Brought Forward</td><td class="num">${fmt(opening)}</td></tr>`:''}
-    ${rows.map(r=>`<tr><td>${r.date}</td><td>${r.voucher}</td><td>${r.against}</td><td>${esc(r.narration)}</td><td class="num">${r.dr?fmt(r.dr):''}</td><td class="num">${r.cr?fmt(r.cr):''}</td><td class="num">${fmt(r.bal)}</td></tr>`).join('')}</tbody>
+    ${rows.map(r=>`<tr><td>${esc(r.date)}</td><td>${esc(r.voucher)}</td><td>${esc(r.against)}</td><td>${esc(r.narration)}</td><td class="num">${r.dr?fmt(r.dr):''}</td><td class="num">${r.cr?fmt(r.cr):''}</td><td class="num">${fmt(r.bal)}</td></tr>`).join('')}</tbody>
     <tfoot><tr><td colspan="6">Closing Balance</td><td class="num">${fmt(closing)}</td></tr></tfoot></table>`;
     printSingle(html);
   });
@@ -1274,7 +1342,7 @@ function renderTB(){
         <thead><tr><th>Code</th><th>Account</th><th>Type</th><th class="num">${t('dr')}</th><th class="num">${t('cr')}</th></tr></thead>
         <tbody>
           <tr class="unit-row"><td colspan="5">${getHeaderUnitNote()}</td></tr>
-          ${rows.map(r=>`<tr><td><span class="code-badge">${r.code}</span></td><td>${r.name}</td><td><span class="tag ${r.type}">${r.type}</span></td><td class="num">${r.closeDr?fmt(r.closeDr):''}</td><td class="num">${r.closeCr?fmt(r.closeCr):''}</td></tr>`).join('')}
+          ${rows.map(r=>`<tr><td><span class="code-badge">${r.code}</span></td><td>${esc(r.name)}</td><td><span class="tag ${r.type}">${r.type}</span></td><td class="num">${r.closeDr?fmt(r.closeDr):''}</td><td class="num">${r.closeCr?fmt(r.closeCr):''}</td></tr>`).join('')}
         </tbody>
         <tfoot><tr><td colspan="3">${t('total')}</td><td class="num">${fmt(totDr)}</td><td class="num">${fmt(totCr)}</td></tr></tfoot>
       </table>` : `
@@ -1282,16 +1350,16 @@ function renderTB(){
         <thead><tr><th>Code</th><th>Account</th><th class="num">Opening Dr</th><th class="num">Opening Cr</th><th class="num">Period Dr</th><th class="num">Period Cr</th><th class="num">Closing Dr</th><th class="num">Closing Cr</th></tr></thead>
         <tbody>
           <tr class="unit-row"><td colspan="8">${getHeaderUnitNote()}</td></tr>
-          ${rows.map(r=>`<tr><td><span class="code-badge">${r.code}</span></td><td>${r.name}</td><td class="num">${r.openDr?fmt(r.openDr):''}</td><td class="num">${r.openCr?fmt(r.openCr):''}</td><td class="num">${r.perDr?fmt(r.perDr):''}</td><td class="num">${r.perCr?fmt(r.perCr):''}</td><td class="num">${r.closeDr?fmt(r.closeDr):''}</td><td class="num">${r.closeCr?fmt(r.closeCr):''}</td></tr>`).join('')}
+          ${rows.map(r=>`<tr><td><span class="code-badge">${r.code}</span></td><td>${esc(r.name)}</td><td class="num">${r.openDr?fmt(r.openDr):''}</td><td class="num">${r.openCr?fmt(r.openCr):''}</td><td class="num">${r.perDr?fmt(r.perDr):''}</td><td class="num">${r.perCr?fmt(r.perCr):''}</td><td class="num">${r.closeDr?fmt(r.closeDr):''}</td><td class="num">${r.closeCr?fmt(r.closeCr):''}</td></tr>`).join('')}
         </tbody>
         <tfoot><tr><td colspan="2">${t('total')}</td><td class="num">${fmt(rows.reduce((s,r)=>s+r.openDr,0))}</td><td class="num">${fmt(rows.reduce((s,r)=>s+r.openCr,0))}</td><td class="num">${fmt(rows.reduce((s,r)=>s+r.perDr,0))}</td><td class="num">${fmt(rows.reduce((s,r)=>s+r.perCr,0))}</td><td class="num">${fmt(totDr)}</td><td class="num">${fmt(totCr)}</td></tr></tfoot>
       </table>`);
 
   el.innerHTML = `<div class="card">
     <div class="report-head">
-      <div class="co">${pref.companyName||''}</div>
-      <div class="title">${pref.txtTB || 'Trial Balance'}</div>
-      <div class="sub">As at end of ${shortYear(state.years[idx]?.name)||''}</div>
+      <div class="co">${esc(pref.companyName||'')}</div>
+      <div class="title">${esc(pref.txtTB || 'Trial Balance')}</div>
+      <div class="sub">As at end of ${shortYearH(state.years[idx]?.name)||''}</div>
     </div>
     <div class="controls no-print" style="justify-content:space-between;margin-bottom:10px;flex-wrap:wrap">
       <div class="controls">
@@ -1309,7 +1377,7 @@ function renderTB(){
 
   el.querySelector('#tb2ViewBtn').onclick = ()=>{ pref.tbView='2col'; savePref(); renderTB(); };
   el.querySelector('#tb6ViewBtn').onclick = ()=>{ pref.tbView='6col'; savePref(); renderTB(); };
-  el.querySelector('#tbPdfBtn').onclick = ()=> printSingle(`<div class="report-head"><div class="title">${pref.txtTB||'Trial Balance'}</div><div class="sub">As at end of ${shortYear(state.years[idx]?.name)||''}</div></div>${tableBody}`);
+  el.querySelector('#tbPdfBtn').onclick = ()=> printSingle(`<div class="report-head"><div class="title">${esc(pref.txtTB || 'Trial Balance')}</div><div class="sub">As at end of ${shortYearH(state.years[idx]?.name)||''}</div></div>${tableBody}`);
   el.querySelector('#tbXlsBtn').onclick = ()=>{
     const rowsOut = view==='2col'
       ? [['Code','Account','Type','Debit','Credit'], ...rows.map(r=>[r.code,r.name,r.type,r.closeDr?r.closeDr.toFixed(2):'',r.closeCr?r.closeCr.toFixed(2):'']), ['','','Total',totDr.toFixed(2),totCr.toFixed(2)]]
@@ -1352,18 +1420,18 @@ function renderPL(){
     return {a, v, pv};
   }).filter(x=>Math.abs(x.v)>0.005 || Math.abs(x.pv)>0.005);
 
-  const yearHead = `<th class="num year-col">${shortYear(state.years[idx]?.name)||'Current'}</th>${showComp?`<th class="num year-col">${shortYear(state.years[idx-1]?.name)}</th>`:''}`;
+  const yearHead = `<th class="num year-col">${shortYearH(state.years[idx]?.name)||'Current'}</th>${showComp?`<th class="num year-col">${shortYearH(state.years[idx-1]?.name)}</th>`:''}`;
   const tableBody = `
     <table>
       <thead><tr><th>Particulars</th>${yearHead}</tr></thead>
       <tbody>
         <tr class="unit-row"><td colspan="${cols}">${getHeaderUnitNote()}</td></tr>
-        <tr class="section-row"><td colspan="${cols}">${pref.txtInc || 'Income'}</td></tr>
-        ${incNZ.length ? incNZ.map(x=>`<tr><td>${x.a.name}</td><td class="num">${fmt(x.v)}</td>${showComp ? `<td class="num">${fmt(x.pv)}</td>` : ''}</tr>`).join('') : `<tr><td class="empty" colspan="${cols}">None</td></tr>`}
-        <tr class="subtotal-row"><td>Total ${pref.txtInc || 'Income'}</td><td class="num">${fmt(curr.totInc)}</td>${showComp ? `<td class="num">${fmt(prev.totInc)}</td>` : ''}</tr>
-        <tr class="section-row"><td colspan="${cols}">${pref.txtExp || 'Expense'}</td></tr>
-        ${expNZ.length ? expNZ.map(x=>`<tr><td>${x.a.name}</td><td class="num">${fmt(x.v)}</td>${showComp ? `<td class="num">${fmt(x.pv)}</td>` : ''}</tr>`).join('') : `<tr><td class="empty" colspan="${cols}">None</td></tr>`}
-        <tr class="subtotal-row"><td>Total ${pref.txtExp || 'Expense'}</td><td class="num">${fmt(curr.totExp)}</td>${showComp ? `<td class="num">${fmt(prev.totExp)}</td>` : ''}</tr>
+        <tr class="section-row"><td colspan="${cols}">${esc(pref.txtInc || 'Income')}</td></tr>
+        ${incNZ.length ? incNZ.map(x=>`<tr><td>${esc(x.a.name)}</td><td class="num">${fmt(x.v)}</td>${showComp ? `<td class="num">${fmt(x.pv)}</td>` : ''}</tr>`).join('') : `<tr><td class="empty" colspan="${cols}">None</td></tr>`}
+        <tr class="subtotal-row"><td>Total ${esc(pref.txtInc || 'Income')}</td><td class="num">${fmt(curr.totInc)}</td>${showComp ? `<td class="num">${fmt(prev.totInc)}</td>` : ''}</tr>
+        <tr class="section-row"><td colspan="${cols}">${esc(pref.txtExp || 'Expense')}</td></tr>
+        ${expNZ.length ? expNZ.map(x=>`<tr><td>${esc(x.a.name)}</td><td class="num">${fmt(x.v)}</td>${showComp ? `<td class="num">${fmt(x.pv)}</td>` : ''}</tr>`).join('') : `<tr><td class="empty" colspan="${cols}">None</td></tr>`}
+        <tr class="subtotal-row"><td>Total ${esc(pref.txtExp || 'Expense')}</td><td class="num">${fmt(curr.totExp)}</td>${showComp ? `<td class="num">${fmt(prev.totExp)}</td>` : ''}</tr>
       </tbody>
       <tfoot>
         <tr><td>${curr.net>=0 ? t('netProfit') : t('netLoss')}</td><td class="num">${fmt(curr.net)}</td>${showComp ? `<td class="num">${fmt(prev.net)}</td>` : ''}</tr>
@@ -1372,29 +1440,29 @@ function renderPL(){
 
   el.innerHTML = `<div class="card">
     <div class="report-head">
-      <div class="co">${pref.companyName||''}</div>
-      <div class="title">${pref.txtPL || 'Profit & Loss Statement'}</div>
-      <div class="sub">For the period ended ${shortYear(state.years[idx]?.name)||''}</div>
+      <div class="co">${esc(pref.companyName||'')}</div>
+      <div class="title">${esc(pref.txtPL || 'Profit & Loss Statement')}</div>
+      <div class="sub">For the period ended ${shortYearH(state.years[idx]?.name)||''}</div>
     </div>
     <div class="controls no-print" style="justify-content:flex-end;margin-bottom:10px">
       <button class="btn-ghost btn-sm" id="plPdfBtn">Download PDF</button>
       <button class="btn-ghost btn-sm" id="plXlsBtn">Download Excel</button>
     </div>
     <div class="stat-row">
-      <div class="stat"><div class="l">${pref.txtInc || 'Income'}</div><div class="v">${fmt(curr.totInc)}</div></div>
-      <div class="stat"><div class="l">${pref.txtExp || 'Expense'}</div><div class="v">${fmt(curr.totExp)}</div></div>
+      <div class="stat"><div class="l">${esc(pref.txtInc || 'Income')}</div><div class="v">${fmt(curr.totInc)}</div></div>
+      <div class="stat"><div class="l">${esc(pref.txtExp || 'Expense')}</div><div class="v">${fmt(curr.totExp)}</div></div>
       <div class="stat"><div class="l">${curr.net>=0 ? t('netProfit') : t('netLoss')}</div><div class="v" style="color:${curr.net>=0?'var(--good)':'var(--bad)'}">${fmt(Math.abs(curr.net))}</div></div>
     </div>
     ${tableBody}
   </div>`;
 
-  el.querySelector('#plPdfBtn').onclick = ()=> printSingle(`<div class="report-head"><div class="title">${pref.txtPL||'Profit & Loss Statement'}</div><div class="sub">For the period ended ${shortYear(state.years[idx]?.name)||''}</div></div>${tableBody}`);
+  el.querySelector('#plPdfBtn').onclick = ()=> printSingle(`<div class="report-head"><div class="title">${esc(pref.txtPL || 'Profit & Loss Statement')}</div><div class="sub">For the period ended ${shortYearH(state.years[idx]?.name)||''}</div></div>${tableBody}`);
   el.querySelector('#plXlsBtn').onclick = ()=>{
     const rows = [['Particulars', shortYear(state.years[idx]?.name)||'Current', ...(showComp?[shortYear(state.years[idx-1]?.name)]:[])],
       [pref.txtInc||'Income'], ...incNZ.map(x=>[x.a.name, x.v.toFixed(2), ...(showComp?[x.pv.toFixed(2)]:[])]),
-      [`Total ${pref.txtInc||'Income'}`, curr.totInc.toFixed(2), ...(showComp?[prev.totInc.toFixed(2)]:[])],
+      [`Total ${esc(pref.txtInc || 'Income')}`, curr.totInc.toFixed(2), ...(showComp?[prev.totInc.toFixed(2)]:[])],
       [pref.txtExp||'Expense'], ...expNZ.map(x=>[x.a.name, x.v.toFixed(2), ...(showComp?[x.pv.toFixed(2)]:[])]),
-      [`Total ${pref.txtExp||'Expense'}`, curr.totExp.toFixed(2), ...(showComp?[prev.totExp.toFixed(2)]:[])],
+      [`Total ${esc(pref.txtExp || 'Expense')}`, curr.totExp.toFixed(2), ...(showComp?[prev.totExp.toFixed(2)]:[])],
       [curr.net>=0?t('netProfit'):t('netLoss'), curr.net.toFixed(2), ...(showComp?[prev.net.toFixed(2)]:[])]];
     downloadCSV(rows, `profit_loss_${state.years[idx]?.name||''}.csv`);
   };
@@ -1424,7 +1492,7 @@ function renderBS(){
   const diff = totA - (totL+totE);
   const isSplitRE = pref.retainedEarningsMode === 'split';
   const cols = showComp ? 3 : 2;
-  const yearHead = `<th class="num year-col">${shortYear(state.years[idx]?.name)||'Current'}</th>${showComp?`<th class="num year-col">${shortYear(state.years[idx-1]?.name)}</th>`:''}`;
+  const yearHead = `<th class="num year-col">${shortYearH(state.years[idx]?.name)||'Current'}</th>${showComp?`<th class="num year-col">${shortYearH(state.years[idx-1]?.name)}</th>`:''}`;
 
   const eqRows = !isSplitRE ?
       `<tr><td>Total Accumulated Retained Earnings</td><td class="num">${fmt(broughtForward + net)}</td>${showComp?`<td class="num">${fmt(prevBroughtForward + prevNet)}</td>`:''}</tr>`
@@ -1436,16 +1504,16 @@ function renderBS(){
       <thead><tr><th>Particulars</th>${yearHead}</tr></thead>
       <tbody>
         <tr class="unit-row"><td colspan="${cols}">${getHeaderUnitNote()}</td></tr>
-        <tr class="section-row"><td colspan="${cols}">${pref.txtAsset || 'Assets'}</td></tr>
-        ${assets.length?assets.map(x=>`<tr><td>${x.a.name}</td><td class="num">${fmt(x.v)}</td>${showComp?`<td class="num">${fmt(x.pv)}</td>`:''}</tr>`).join(''):`<tr><td class="empty" colspan="${cols}">None</td></tr>`}
-        <tr class="subtotal-row"><td>Total ${pref.txtAsset || 'Assets'}</td><td class="num">${fmt(totA)}</td>${showComp?`<td class="num">${fmt(prevTotA)}</td>`:''}</tr>
-        <tr class="section-row"><td colspan="${cols}">${pref.txtLiab || 'Liabilities'}</td></tr>
-        ${liabs.length?liabs.map(x=>`<tr><td>${x.a.name}</td><td class="num">${fmt(x.v)}</td>${showComp?`<td class="num">${fmt(x.pv)}</td>`:''}</tr>`).join(''):`<tr><td class="empty" colspan="${cols}">None</td></tr>`}
-        <tr class="subtotal-row"><td>Total ${pref.txtLiab || 'Liabilities'}</td><td class="num">${fmt(totL)}</td>${showComp?`<td class="num">${fmt(prevTotL)}</td>`:''}</tr>
-        <tr class="section-row"><td colspan="${cols}">${pref.txtEq || 'Equity'}</td></tr>
-        ${eq.map(x=>`<tr><td>${x.a.name}</td><td class="num">${fmt(x.v)}</td>${showComp?`<td class="num">${fmt(x.pv)}</td>`:''}</tr>`).join('')}
+        <tr class="section-row"><td colspan="${cols}">${esc(pref.txtAsset || 'Assets')}</td></tr>
+        ${assets.length?assets.map(x=>`<tr><td>${esc(x.a.name)}</td><td class="num">${fmt(x.v)}</td>${showComp?`<td class="num">${fmt(x.pv)}</td>`:''}</tr>`).join(''):`<tr><td class="empty" colspan="${cols}">None</td></tr>`}
+        <tr class="subtotal-row"><td>Total ${esc(pref.txtAsset || 'Assets')}</td><td class="num">${fmt(totA)}</td>${showComp?`<td class="num">${fmt(prevTotA)}</td>`:''}</tr>
+        <tr class="section-row"><td colspan="${cols}">${esc(pref.txtLiab || 'Liabilities')}</td></tr>
+        ${liabs.length?liabs.map(x=>`<tr><td>${esc(x.a.name)}</td><td class="num">${fmt(x.v)}</td>${showComp?`<td class="num">${fmt(x.pv)}</td>`:''}</tr>`).join(''):`<tr><td class="empty" colspan="${cols}">None</td></tr>`}
+        <tr class="subtotal-row"><td>Total ${esc(pref.txtLiab || 'Liabilities')}</td><td class="num">${fmt(totL)}</td>${showComp?`<td class="num">${fmt(prevTotL)}</td>`:''}</tr>
+        <tr class="section-row"><td colspan="${cols}">${esc(pref.txtEq || 'Equity')}</td></tr>
+        ${eq.map(x=>`<tr><td>${esc(x.a.name)}</td><td class="num">${fmt(x.v)}</td>${showComp?`<td class="num">${fmt(x.pv)}</td>`:''}</tr>`).join('')}
         ${eqRows}
-        <tr class="subtotal-row"><td>Total ${pref.txtEq || 'Equity'}</td><td class="num">${fmt(totE)}</td>${showComp?`<td class="num">${fmt(prevTotE)}</td>`:''}</tr>
+        <tr class="subtotal-row"><td>Total ${esc(pref.txtEq || 'Equity')}</td><td class="num">${fmt(totE)}</td>${showComp?`<td class="num">${fmt(prevTotE)}</td>`:''}</tr>
       </tbody>
       <tfoot><tr><td>Liabilities + Equity</td><td class="num">${fmt(totL+totE)}</td>${showComp?`<td class="num">${fmt(prevTotL+prevTotE)}</td>`:''}</tr></tfoot>
     </table>
@@ -1453,9 +1521,9 @@ function renderBS(){
 
   el.innerHTML = `<div class="card">
     <div class="report-head">
-      <div class="co">${pref.companyName||''}</div>
-      <div class="title">${pref.txtBS || 'Balance Sheet'}</div>
-      <div class="sub">As at end of ${shortYear(state.years[idx]?.name)||''}</div>
+      <div class="co">${esc(pref.companyName||'')}</div>
+      <div class="title">${esc(pref.txtBS || 'Balance Sheet')}</div>
+      <div class="sub">As at end of ${shortYearH(state.years[idx]?.name)||''}</div>
     </div>
     <div class="controls no-print" style="justify-content:flex-end;margin-bottom:10px">
       <button class="btn-ghost btn-sm" id="bsPdfBtn">Download PDF</button>
@@ -1464,16 +1532,16 @@ function renderBS(){
     ${tableBody}
   </div>`;
 
-  el.querySelector('#bsPdfBtn').onclick = ()=> printSingle(`<div class="report-head"><div class="title">${pref.txtBS||'Balance Sheet'}</div><div class="sub">As at end of ${shortYear(state.years[idx]?.name)||''}</div></div>${tableBody}`);
+  el.querySelector('#bsPdfBtn').onclick = ()=> printSingle(`<div class="report-head"><div class="title">${esc(pref.txtBS || 'Balance Sheet')}</div><div class="sub">As at end of ${shortYearH(state.years[idx]?.name)||''}</div></div>${tableBody}`);
   el.querySelector('#bsXlsBtn').onclick = ()=>{
     const rows = [['Particulars', shortYear(state.years[idx]?.name)||'Current', ...(showComp?[shortYear(state.years[idx-1]?.name)]:[])],
       [pref.txtAsset||'Assets'], ...assets.map(x=>[x.a.name, x.v.toFixed(2), ...(showComp?[x.pv.toFixed(2)]:[])]),
-      [`Total ${pref.txtAsset||'Assets'}`, totA.toFixed(2), ...(showComp?[prevTotA.toFixed(2)]:[])],
+      [`Total ${esc(pref.txtAsset || 'Assets')}`, totA.toFixed(2), ...(showComp?[prevTotA.toFixed(2)]:[])],
       [pref.txtLiab||'Liabilities'], ...liabs.map(x=>[x.a.name, x.v.toFixed(2), ...(showComp?[x.pv.toFixed(2)]:[])]),
-      [`Total ${pref.txtLiab||'Liabilities'}`, totL.toFixed(2), ...(showComp?[prevTotL.toFixed(2)]:[])],
+      [`Total ${esc(pref.txtLiab || 'Liabilities')}`, totL.toFixed(2), ...(showComp?[prevTotL.toFixed(2)]:[])],
       [pref.txtEq||'Equity'], ...eq.map(x=>[x.a.name, x.v.toFixed(2), ...(showComp?[x.pv.toFixed(2)]:[])]),
       ...(isSplitRE ? [['Retained Earnings - Brought Forward', broughtForward.toFixed(2), ...(showComp?[prevBroughtForward.toFixed(2)]:[])],['Net Profit / (Loss) - Current Year', net.toFixed(2), ...(showComp?[prevNet.toFixed(2)]:[])]] : [['Total Accumulated Retained Earnings', (broughtForward+net).toFixed(2), ...(showComp?[(prevBroughtForward+prevNet).toFixed(2)]:[])]]),
-      [`Total ${pref.txtEq||'Equity'}`, totE.toFixed(2), ...(showComp?[prevTotE.toFixed(2)]:[])]];
+      [`Total ${esc(pref.txtEq || 'Equity')}`, totE.toFixed(2), ...(showComp?[prevTotE.toFixed(2)]:[])]];
     downloadCSV(rows, `balance_sheet_${state.years[idx]?.name||''}.csv`);
   };
 }
@@ -1506,18 +1574,18 @@ function renderCF(){
 
   const tableBody = `
     <table>
-      <thead><tr><th>Particulars</th><th class="num year-col">${shortYear(state.years[idx]?.name)||'Current'}</th></tr></thead>
+      <thead><tr><th>Particulars</th><th class="num year-col">${shortYearH(state.years[idx]?.name)||'Current'}</th></tr></thead>
       <tbody>
         <tr class="unit-row"><td colspan="2">${getHeaderUnitNote()}</td></tr>
         <tr class="section-row"><td colspan="2">Operating Activities</td></tr>
         <tr><td>Net Profit / (Loss) for the year</td><td class="num">${fmt(netProfit)}</td></tr>
-        ${lines.filter(l=>l.cat==='Operating').map(l=>`<tr><td>Adjustment: ${l.name}</td><td class="num">${fmt(l.cashEffect)}</td></tr>`).join('')}
+        ${lines.filter(l=>l.cat==='Operating').map(l=>`<tr><td>Adjustment: ${esc(l.name)}</td><td class="num">${fmt(l.cashEffect)}</td></tr>`).join('')}
         <tr class="subtotal-row"><td>Net Cash from Operating</td><td class="num">${fmt(buckets.Operating)}</td></tr>
         <tr class="section-row"><td colspan="2">Investing Activities</td></tr>
-        ${lines.filter(l=>l.cat==='Investing').length?lines.filter(l=>l.cat==='Investing').map(l=>`<tr><td>${l.name}</td><td class="num">${fmt(l.cashEffect)}</td></tr>`).join(''):'<tr><td class="empty" colspan="2">None</td></tr>'}
+        ${lines.filter(l=>l.cat==='Investing').length?lines.filter(l=>l.cat==='Investing').map(l=>`<tr><td>${esc(l.name)}</td><td class="num">${fmt(l.cashEffect)}</td></tr>`).join(''):'<tr><td class="empty" colspan="2">None</td></tr>'}
         <tr class="subtotal-row"><td>Net Cash from Investing</td><td class="num">${fmt(buckets.Investing)}</td></tr>
         <tr class="section-row"><td colspan="2">Financing Activities</td></tr>
-        ${lines.filter(l=>l.cat==='Financing').length?lines.filter(l=>l.cat==='Financing').map(l=>`<tr><td>${l.name}</td><td class="num">${fmt(l.cashEffect)}</td></tr>`).join(''):'<tr><td class="empty" colspan="2">None</td></tr>'}
+        ${lines.filter(l=>l.cat==='Financing').length?lines.filter(l=>l.cat==='Financing').map(l=>`<tr><td>${esc(l.name)}</td><td class="num">${fmt(l.cashEffect)}</td></tr>`).join(''):'<tr><td class="empty" colspan="2">None</td></tr>'}
         <tr class="subtotal-row"><td>Net Cash from Financing</td><td class="num">${fmt(buckets.Financing)}</td></tr>
         <tr class="section-row"><td colspan="2">Reconciliation</td></tr>
         <tr><td>Cash &amp; Bank - opening</td><td class="num">${fmt(openCash)}</td></tr>
@@ -1528,9 +1596,9 @@ function renderCF(){
 
   el.innerHTML = `<div class="card">
     <div class="report-head">
-      <div class="co">${pref.companyName||''}</div>
-      <div class="title">${pref.txtCF || 'Cash Flow Statement'}</div>
-      <div class="sub">Indirect method - for ${shortYear(state.years[idx]?.name)||''}</div>
+      <div class="co">${esc(pref.companyName||'')}</div>
+      <div class="title">${esc(pref.txtCF || 'Cash Flow Statement')}</div>
+      <div class="sub">Indirect method - for ${shortYearH(state.years[idx]?.name)||''}</div>
     </div>
     <div class="controls no-print" style="justify-content:flex-end;margin-bottom:10px">
       <button class="btn-ghost btn-sm" id="cfPdfBtn">Download PDF</button>
@@ -1546,11 +1614,11 @@ function renderCF(){
     ${tableBody}
   </div>`;
 
-  el.querySelector('#cfPdfBtn').onclick = ()=> printSingle(`<div class="report-head"><div class="title">${pref.txtCF||'Cash Flow Statement'}</div><div class="sub">Indirect method - for ${shortYear(state.years[idx]?.name)||''}</div></div>${tableBody}`);
+  el.querySelector('#cfPdfBtn').onclick = ()=> printSingle(`<div class="report-head"><div class="title">${esc(pref.txtCF || 'Cash Flow Statement')}</div><div class="sub">Indirect method - for ${shortYearH(state.years[idx]?.name)||''}</div></div>${tableBody}`);
   el.querySelector('#cfXlsBtn').onclick = ()=>{
     const rows = [['Particulars', shortYear(state.years[idx]?.name)||'Current'],
       ['Operating Activities'], ['Net Profit / (Loss) for the year', netProfit.toFixed(2)],
-      ...lines.filter(l=>l.cat==='Operating').map(l=>[`Adjustment: ${l.name}`, l.cashEffect.toFixed(2)]),
+      ...lines.filter(l=>l.cat==='Operating').map(l=>[`Adjustment: ${esc(l.name)}`, l.cashEffect.toFixed(2)]),
       ['Net Cash from Operating', buckets.Operating.toFixed(2)],
       ['Investing Activities'], ...lines.filter(l=>l.cat==='Investing').map(l=>[l.name, l.cashEffect.toFixed(2)]),
       ['Net Cash from Investing', buckets.Investing.toFixed(2)],
@@ -1572,9 +1640,9 @@ function renderCashBank(){
   el.innerHTML = `
     <div class="card">
       <div class="report-head">
-        <div class="co">${pref.companyName||''}</div>
+        <div class="co">${esc(pref.companyName||'')}</div>
         <div class="title">Cash &amp; Bank Reconciliation</div>
-        <div class="sub">Real vs Books, per Cash/Bank account - ${shortYear(state.years[idx]?.name)||''}</div>
+        <div class="sub">Real vs Books, per Cash/Bank account - ${shortYearH(state.years[idx]?.name)||''}</div>
       </div>
     </div>
     <div class="card">
@@ -1583,7 +1651,7 @@ function renderCashBank(){
       <div class="grid" style="grid-template-columns:1.3fr 130px 1.4fr 1fr 1fr auto">
         <div><label>Account</label><select id="cbAcc"></select></div>
         <div><label>Date</label><input type="date" id="cbDate" value="${edit?edit.date:new Date().toISOString().slice(0,10)}"></div>
-        <div><label>Description</label><input id="cbDesc" placeholder="e.g. Inwards, Outwards, Transaction Charges" value="${edit?edit.description||'':''}"></div>
+        <div><label>Description</label><input id="cbDesc" placeholder="e.g. Inwards, Outwards, Transaction Charges" value="${esc(edit?edit.description||'':'')}"></div>
         <div><label>Real</label><input type="number" step="0.01" id="cbReal" placeholder="Actual movement" value="${edit?edit.real:''}"></div>
         <div><label>Writeoff</label><input type="number" step="0.01" id="cbWriteoff" placeholder="Adjustment (optional)" value="${edit?edit.writeoff||'':''}"></div>
         <div style="align-self:end"><button class="btn-primary" id="cbSaveBtn" style="width:100%">${edit?'Save':'Add'}</button></div>
@@ -1607,7 +1675,7 @@ function renderCashBank(){
       <div class="grid" style="grid-template-columns:1.3fr 130px 1fr">
         <div><label>Account</label><select id="ccAcc"></select></div>
         <div><label>Date</label><input type="date" id="ccDate" value="${editCount?editCount.date:new Date().toISOString().slice(0,10)}"></div>
-        <div><label>Note</label><input id="ccNote" placeholder="Optional" value="${editCount?editCount.note||'':''}"></div>
+        <div><label>Note</label><input id="ccNote" placeholder="Optional" value="${esc(editCount?editCount.note||'':'')}"></div>
       </div>
       <div id="ccDenomGrid" class="denom-grid"></div>
       <div id="ccTotal" class="stat-row" style="margin-top:12px"></div>
@@ -1622,7 +1690,7 @@ function renderCashBank(){
 
   if(cashAccs.length){
     const accSel = el.querySelector('#cbAcc');
-    accSel.innerHTML = cashAccs.map(a=>`<option value="${a.id}" ${edit&&edit.accId===a.id?'selected':''}>${acctCode(a)} · ${a.name}</option>`).join('');
+    accSel.innerHTML = cashAccs.map(a=>`<option value="${a.id}" ${edit&&edit.accId===a.id?'selected':''}>${acctCode(a)} · ${esc(a.name)}</option>`).join('');
     enhanceSelect(accSel);
     el.querySelector('#cbSaveBtn').onclick = async ()=>{
       const err = m=>el.querySelector('#cbErr').textContent=m; err('');
@@ -1650,7 +1718,7 @@ function renderCashBank(){
           const acc = cashAccs.find(a=>a.name.toLowerCase()===accName.toLowerCase());
           const date = (row.date||'').trim();
           const real = parseFloat(row.real);
-          if(!acc || !date || isNaN(real) || isLocked(date)){ skipped++; IMP_BAD.push('Row '+(i+2)+': '+(!acc?'Not a Cash/Bank account: '+accName:(!date?'Missing date':(isNaN(real)?'Invalid Real amount':'Date is in the locked period')))); return; }
+          if(!acc || !ISO_DATE.test(date) || isNaN(real) || isLocked(date)){ skipped++; IMP_BAD.push('Row '+(i+2)+': '+(!acc?'Not a Cash/Bank account: '+accName:(!ISO_DATE.test(date)?'Invalid Or Missing Date (Use YYYY-MM-DD)':(isNaN(real)?'Invalid Real amount':'Date is in the locked period')))); return; }
           const writeoff = parseFloat(row.writeoff) || 0;
           state.cashRecon.push({id:uid(), accId:acc.id, date, description:(row.description||'').trim(), real, writeoff});
           added++;
@@ -1672,10 +1740,10 @@ function renderCashBank(){
     const body = rows.map(m=>{
       const books = m.real+m.writeoff; running += books;
       const day = m.date ? new Date(m.date+'T00:00:00').toLocaleDateString(undefined,{weekday:'long'}) : '';
-      return `<tr><td>${m.date}</td><td class="small">${day}</td><td>${m.description||''}</td><td class="num">${fmt(m.real)}</td><td class="num">${m.writeoff?fmt(m.writeoff):''}</td><td class="num">${fmt(books)}</td>
+      return `<tr><td>${esc(m.date)}</td><td class="small">${day}</td><td>${esc(m.description||'')}</td><td class="num">${fmt(m.real)}</td><td class="num">${m.writeoff?fmt(m.writeoff):''}</td><td class="num">${fmt(books)}</td>
       <td><button class="rowbtn" data-e="${m.id}">${t('edit')}</button><button class="rowbtn danger" data-d="${m.id}">${t('delete')}</button></td></tr>`;
     }).join('');
-    return `<div class="card"><h3><span><span class="code-badge">${acctCode(a)}</span>${a.name}</span></h3>
+    return `<div class="card"><h3><span><span class="code-badge">${acctCode(a)}</span>${esc(a.name)}</span></h3>
       <table><thead><tr><th>Date</th><th>Day</th><th>Description</th><th class="num">Real</th><th class="num">Writeoff</th><th class="num">Books</th><th></th></tr></thead>
       <tbody>${body}</tbody>
       <tfoot><tr><td colspan="3">Total</td><td class="num">${fmt(totReal)}</td><td class="num">${fmt(totWriteoff)}</td><td class="num">${fmt(totBooks)}</td><td></td></tr></tfoot></table>
@@ -1698,7 +1766,7 @@ function renderCashBank(){
   /* ---- Cash denomination count ---- */
   if(cashAccs.length){
     const ccAccSel = el.querySelector('#ccAcc');
-    ccAccSel.innerHTML = cashAccs.map(a=>`<option value="${a.id}" ${editCount&&editCount.accId===a.id?'selected':''}>${acctCode(a)} · ${a.name}</option>`).join('');
+    ccAccSel.innerHTML = cashAccs.map(a=>`<option value="${a.id}" ${editCount&&editCount.accId===a.id?'selected':''}>${acctCode(a)} · ${esc(a.name)}</option>`).join('');
     enhanceSelect(ccAccSel);
     const grid = el.querySelector('#ccDenomGrid');
     grid.innerHTML = DENOMS.map(d=>`<div class="denom-cell"><label>Rs. ${d.toLocaleString()}</label>
@@ -1745,11 +1813,11 @@ function renderCashBank(){
       const total = DENOMS.reduce((s,d)=>s+d*(c.denominations[d]||0),0);
       const variance = total - ledgerClosing;
       const breakdown = DENOMS.filter(d=>c.denominations[d]).map(d=>`${d}×${c.denominations[d]}`).join(', ');
-      return `<tr><td>${c.date}</td><td class="small">${breakdown||'-'}${c.note?' · '+c.note:''}</td><td class="num">${fmt(total)}</td>
+      return `<tr><td>${esc(c.date)}</td><td class="small">${breakdown||'-'}${c.note?' · '+esc(c.note):''}</td><td class="num">${fmt(total)}</td>
       <td class="num ${Math.abs(variance)<0.5?'ok':'err'}">${Math.abs(variance)<0.5?'Matched':fmt(Math.abs(variance))}</td>
       <td><button class="rowbtn" data-ce="${c.id}">${t('edit')}</button><button class="rowbtn danger" data-cd="${c.id}">${t('delete')}</button></td></tr>`;
     }).join('');
-    return `<div class="card"><h3><span><span class="code-badge">${acctCode(a)}</span>${a.name} - Cash Counts</span><span class="small">Ledger balance: ${fmt(ledgerClosing)}</span></h3>
+    return `<div class="card"><h3><span><span class="code-badge">${acctCode(a)}</span>${esc(a.name)} - Cash Counts</span><span class="small">Ledger balance: ${fmt(ledgerClosing)}</span></h3>
       <table><thead><tr><th>Date</th><th>Breakdown</th><th class="num">Counted</th><th class="num">vs Ledger</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>`;
   }).join('');
@@ -1782,9 +1850,9 @@ function renderAudit(){
 
   el.innerHTML = `
     <div class="card">
-      <h3>${edit ? 'Edit Audit Client' : 'Add Audit Client'} <span class="small">${shortYear(state.years[idx]?.name)||''}</span></h3>
+      <h3>${edit ? 'Edit Audit Client' : 'Add Audit Client'} <span class="small">${shortYearH(state.years[idx]?.name)||''}</span></h3>
       <div class="grid audit">
-        <div><label>Client Name</label><input id="audClient" placeholder="e.g. ABC Textiles Ltd" value="${edit ? edit.clientName : ''}"></div>
+        <div><label>Client Name</label><input id="audClient" placeholder="e.g. ABC Textiles Ltd" value="${esc(edit ? edit.clientName : '')}"></div>
         <div><label>My Expense (override)</label><input type="number" step="1" id="audExp" placeholder="auto from JVs" value="${edit ? ovVal(edit.expOverride) : ''}"></div>
         <div><label>Firm Allowance (override)</label><input type="number" step="1" id="audFirm" placeholder="auto from JVs" value="${edit ? ovVal(edit.firmOverride) : ''}"></div>
         <div><label>Client Allowance (override)</label><input type="number" step="1" id="audClientAll" placeholder="auto from JVs" value="${edit ? ovVal(edit.clientOverride) : ''}"></div>
@@ -1797,9 +1865,9 @@ function renderAudit(){
 
     <div class="card">
       <div class="report-head">
-        <div class="co">${pref.companyName||''}</div>
+        <div class="co">${esc(pref.companyName||'')}</div>
         <div class="title">Audit Clients Expense & Allowance Summary</div>
-        <div class="sub">${shortYear(state.years[idx]?.name)||''}</div>
+        <div class="sub">${shortYearH(state.years[idx]?.name)||''}</div>
         <div class="unit-note">${getHeaderUnitNote()}</div>
       </div>
       <div class="stat-row">
@@ -1818,7 +1886,7 @@ function renderAudit(){
             ${rowsData.map(r=>{
               const netCost = r.a.net;
               return `<tr>
-                <td><strong>${r.cl.clientName}</strong></td>
+                <td><strong>${esc(r.cl.clientName)}</strong></td>
                 ${cellHtml(r,'exp')}${cellHtml(r,'firm')}${cellHtml(r,'client')}
                 <td class="num" style="font-weight:600;color:${netCost>0?'var(--bad)':'var(--good)'}">${netCost > 0 ? fmt(netCost) : (netCost < 0 ? '(' + fmt(Math.abs(netCost)) + ')' : '0.00')}</td>
                 <td class="btn-group"><button class="rowbtn" data-e="${r.cl.id}">${t('edit')}</button><button class="rowbtn danger" data-d="${r.cl.id}">${t('delete')}</button></td>
@@ -1876,11 +1944,59 @@ function bindSettingsControls(el){
   el.querySelector('#setLogo').onchange=ev=>{
     const f=ev.target.files[0]; if(!f) return;
     const img=new Image();
-    img.onload=()=>{ const k=Math.min(1,320/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k); c.getContext('2d').drawImage(img,0,0,c.width,c.height); localStorage.setItem(LS_LOGO,c.toDataURL('image/png')); URL.revokeObjectURL(img.src); showLogo(); showToast('Logo saved.'); };
+    img.onload=()=>{ const k=Math.min(1,320/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k); c.getContext('2d').drawImage(img,0,0,c.width,c.height); LOGO_CACHE=c.toDataURL('image/png'); writeSecure(LS_LOGO,LOGO_CACHE); URL.revokeObjectURL(img.src); showLogo(); showToast('Logo saved.'); };
     img.src=URL.createObjectURL(f);
   };
-  el.querySelector('#rmLogoBtn').onclick=()=>{ localStorage.removeItem(LS_LOGO); showLogo(); };
+  el.querySelector('#rmLogoBtn').onclick=()=>{ LOGO_CACHE=''; localStorage.removeItem(LS_LOGO); showLogo(); };
   el.querySelector('#saveCtlBtn').onclick=()=>{ pref.retainedEarningsMode=el.querySelector('#setRE').value; pref.lockDate=el.querySelector('#setLock').value; savePref(); renderAll(); showToast('Accounting controls saved.'); };
+}
+function securityHtml(){
+  const on=KCRYPT.active(), ok=KCRYPT.supported();
+  const auto=String(pref.autoLockMin||'0');
+  return `<div class="card"><h3>Security: Passcode Lock &amp; Encryption</h3>
+  <p class="small" style="margin-bottom:10px">Status: <b>${on?'Protected (AES-256 Encryption On)':'Not Protected'}</b>. With a passcode, your books, settings and logo are encrypted on this device, in cloud sync and in Drive backups. Use the same passcode on every device that syncs. If you forget it, the data cannot be recovered. A longer passcode (8 or more characters) is much harder to guess than a 4-digit code.</p>
+  ${!ok?'<p class="err">Encryption Needs A Secure (HTTPS) Connection And A Modern Browser.</p>':(on?`
+  <div class="grid set">
+    <div><label>Current Passcode</label><input type="password" id="secCur" autocomplete="off"></div><div></div>
+    <div><label>New Passcode (4 Or More Characters)</label><input type="password" id="secNew" autocomplete="off"></div>
+    <div><label>Confirm New Passcode</label><input type="password" id="secNew2" autocomplete="off"></div>
+    <div><label>Auto-Lock When App Is In Background</label><select id="secAuto">
+      <option value="0" ${auto==='0'?'selected':''}>Off</option><option value="1" ${auto==='1'?'selected':''}>After 1 Minute</option>
+      <option value="5" ${auto==='5'?'selected':''}>After 5 Minutes</option><option value="15" ${auto==='15'?'selected':''}>After 15 Minutes</option></select></div>
+  </div>
+  <div class="btn-row" style="margin-top:12px"><button class="btn-primary" id="secChangeBtn">Change Passcode</button><button class="btn-ghost" id="secLockNow">Lock Now</button><button class="rowbtn danger" id="secDisableBtn">Turn Off Lock &amp; Encryption</button></div>`:`
+  <div class="grid set">
+    <div><label>New Passcode (4 Or More Characters)</label><input type="password" id="secNew" autocomplete="off"></div>
+    <div><label>Confirm Passcode</label><input type="password" id="secNew2" autocomplete="off"></div>
+  </div>
+  <div class="btn-row" style="margin-top:12px"><button class="btn-primary" id="secEnableBtn">Turn On Lock &amp; Encryption</button></div>`)}
+  <div id="secErr" class="err"></div></div>`;
+}
+async function applyPasscode(pin){
+  await flushSaves(); await KCRYPT.setup(pin);
+  localStorage.setItem(LS_LOCK, await KCRYPT.encrypt('khata-ok'));
+  save(); _lastPrefStr=null; savePref(); if(LOGO_CACHE) writeSecure(LS_LOGO,LOGO_CACHE);
+  await flushSaves();
+}
+function bindSecurity(el){
+  const q=id=>el.querySelector(id), err=m=>{ q('#secErr').textContent=m; };
+  const newPin=()=>{ const a=q('#secNew').value, b=q('#secNew2').value;
+    if(a.length<4){ err('Passcode Must Be At Least 4 Characters.'); return null; }
+    if(a!==b){ err('Passcodes Do Not Match.'); return null; } return a; };
+  const sa=q('#secAuto'); if(sa){ enhanceSelect(sa); sa.onchange=()=>{ pref.autoLockMin=sa.value; savePref(); showToast('Auto-lock saved.'); }; }
+  const en=q('#secEnableBtn'); if(en) en.onclick=async()=>{ err(''); const p=newPin(); if(!p) return;
+    if(!(await showConfirm('Turn on passcode lock and encryption?\n\nIf you forget this passcode, your data cannot be recovered by anyone, including cloud sync and Drive backups.'))) return;
+    en.disabled=true; await applyPasscode(p); showToast('Lock and encryption turned on.'); renderAll(); };
+  const ch=q('#secChangeBtn'); if(ch) ch.onclick=async()=>{ err('');
+    if(!KCRYPT.checkPin(q('#secCur').value)){ err('Current Passcode Is Incorrect.'); return; }
+    const p=newPin(); if(!p) return; ch.disabled=true; await applyPasscode(p); showToast('Passcode changed. Use the new one on your other devices.'); renderAll(); };
+  const dis=q('#secDisableBtn'); if(dis) dis.onclick=async()=>{ err('');
+    if(!KCRYPT.checkPin(q('#secCur').value)){ err('Current Passcode Is Incorrect.'); return; }
+    if(!(await showConfirm('Turn off lock and encryption? Your data will be stored as plain text on this device and in cloud sync.'))) return;
+    await flushSaves(); KCRYPT.clear(); localStorage.removeItem(LS_LOCK);
+    save(); _lastPrefStr=null; savePref(); if(LOGO_CACHE) writeSecure(LS_LOGO,LOGO_CACHE); await flushSaves();
+    showToast('Lock and encryption turned off.'); renderAll(); };
+  const ln=q('#secLockNow'); if(ln) ln.onclick=lockNow;
 }
 function renderSettings(){
   const el = document.getElementById('panel-settings');
@@ -1888,7 +2004,7 @@ function renderSettings(){
     <div class="card">
       <h3>Brand Settings</h3>
       <div class="grid yr" style="margin-bottom:12px">
-        <div><label>Business / Company Name</label><input id="setCoName" value="${pref.companyName||''}"></div>
+        <div><label>Business / Company Name</label><input id="setCoName" value="${esc(pref.companyName||'')}"></div>
         <div><label>Show Brand Name?</label>
           <select id="setShowBrand">
             <option value="1" ${pref.showBrandSidebar!==false?'selected':''}>Yes (Show)</option>
@@ -1897,8 +2013,8 @@ function renderSettings(){
         </div>
       </div>
       <div class="grid set" style="margin-bottom:12px">
-        <div><label>Subtitle / Books Text</label><input id="setSubText" value="${pref.subTitleText||''}"></div>
-        <div><label>Tag / Tracker Text</label><input id="setTagText" value="${pref.tagText||''}"></div>
+        <div><label>Subtitle / Books Text</label><input id="setSubText" value="${esc(pref.subTitleText||'')}"></div>
+        <div><label>Tag / Tracker Text</label><input id="setTagText" value="${esc(pref.tagText||'')}"></div>
       </div>
       <button class="btn-primary" id="saveBrandBtn">Save Brand Settings</button>
     </div>
@@ -1906,7 +2022,7 @@ function renderSettings(){
     <div class="card">
       <h3>${t('numberFmt')}</h3>
       <div class="grid set">
-        <div><label>${t('currLbl')}</label><input id="setCurr" value="${pref.currencySymbol||'PKR'}"></div>
+        <div><label>${t('currLbl')}</label><input id="setCurr" value="${esc(pref.currencySymbol||'PKR')}"></div>
         <div><label>${t('decimalsLbl')}</label><select id="setDec"><option value="0" ${pref.decimals===0?'selected':''}>0</option><option value="2" ${pref.decimals===2?'selected':''}>2</option></select></div>
         <div><label>${t('scaleLbl')}</label><select id="setScale">
           <option value="1" ${pref.amountScale==='1'?'selected':''}>Exact (1)</option>
@@ -1921,15 +2037,16 @@ function renderSettings(){
     <div class="card">
       <h3>${t('customTextLbl')}</h3>
       <div class="grid set">
-        <div><label>P&amp;L Title</label><input id="txtPL" value="${pref.txtPL||''}"></div>
-        <div><label>Balance Sheet Title</label><input id="txtBS" value="${pref.txtBS||''}"></div>
-        <div><label>Cash Flow Title</label><input id="txtCF" value="${pref.txtCF||''}"></div>
-        <div><label>Trial Balance Title</label><input id="txtTB" value="${pref.txtTB||''}"></div>
+        <div><label>P&amp;L Title</label><input id="txtPL" value="${esc(pref.txtPL || '')}"></div>
+        <div><label>Balance Sheet Title</label><input id="txtBS" value="${esc(pref.txtBS || '')}"></div>
+        <div><label>Cash Flow Title</label><input id="txtCF" value="${esc(pref.txtCF || '')}"></div>
+        <div><label>Trial Balance Title</label><input id="txtTB" value="${esc(pref.txtTB || '')}"></div>
       </div>
       <div style="margin-top:10px"><button class="btn-primary" id="saveTxtBtn">${t('save')}</button></div>
     </div>`;
 
   el.insertAdjacentHTML('beforeend', settingsControlsHtml()); bindSettingsControls(el);
+  el.insertAdjacentHTML('beforeend', securityHtml()); bindSecurity(el);
   enhanceSelect(el.querySelector('#setShowBrand'));
   enhanceSelect(el.querySelector('#setDec'));
   enhanceSelect(el.querySelector('#setScale'));
@@ -1964,11 +2081,80 @@ function renderSettings(){
 }
 
 document.addEventListener('keydown',e=>{
+  if(!APP_READY) return;
   if((e.ctrlKey||e.metaKey)&&e.code==='KeyS'){ e.preventDefault(); const b=document.getElementById('postVBtn'); if(pref.tab==='journal'&&b&&!document.querySelector('.modal-overlay.open')) b.click(); }
   else if(e.altKey&&e.code==='KeyN'){ e.preventDefault(); draft={date:'',narration:'',lines:[]}; editingVoucher=null; DIRTY.add('journal'); if(pref.tab==='journal') renderPanel('journal'); else switchTab('journal'); setTimeout(()=>{ const i=document.getElementById('vNar'); if(i) i.focus(); },60); }
+  else if(e.altKey&&e.code==='KeyL'&&KCRYPT.active()){ e.preventDefault(); lockNow(); }
   else if(e.key==='Escape'){ _closeAllSel(); const a=document.getElementById('acctOverlay'); if(a) a.classList.remove('open'); closeMoreSheet(); }
 });
-renderAll();
+
+/* ---------------- Lock screen, auto-lock and boot ---------------- */
+let APP_READY=false;
+function showLockScreen(ctx){
+  return new Promise(resolve=>{
+    const box=document.getElementById('lockScreen'), inp=box.querySelector('#lockPin'), btn=box.querySelector('#lockBtn'), err=box.querySelector('#lockErr'), hint=box.querySelector('#lockHint');
+    const att=()=>{ try{ return JSON.parse(localStorage.getItem(LS_ATT)||'{}')||{}; }catch(e){ return {}; } };
+    let timer=null;
+    hint.textContent = ctx.hasLocal ? 'Enter Your Passcode To Unlock' : 'This Data Is Encrypted. Enter The Passcode You Set On Your Other Device.';
+    if(!KCRYPT.supported()){ err.textContent='Encryption Is Not Available Here. Open The App Over HTTPS.'; btn.disabled=true; inp.disabled=true; }
+    const tick=()=>{ const left=Math.ceil(((att().until||0)-Date.now())/1000);
+      if(left>0){ btn.disabled=true; inp.disabled=true; err.textContent='Too Many Attempts. Try Again In '+left+'s.'; timer=setTimeout(tick,500); }
+      else if(timer){ timer=null; btn.disabled=false; inp.disabled=false; err.textContent=''; } };
+    const submit=async()=>{
+      const pin=inp.value; if(!pin||btn.disabled) return;
+      btn.disabled=true; err.textContent='Checking...';
+      if(await KCRYPT.unlock(pin, ctx.probe)){ localStorage.removeItem(LS_ATT); inp.value=''; resolve(); return; }
+      const a=att(); a.n=(a.n||0)+1; if(a.n>=5) a.until=Date.now()+Math.min(30*Math.pow(2,a.n-5),900)*1000;
+      localStorage.setItem(LS_ATT,JSON.stringify(a)); inp.value=''; btn.disabled=false; err.textContent='Wrong Passcode.'; tick(); if(!inp.disabled) inp.focus();
+    };
+    btn.onclick=submit;
+    inp.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); submit(); } };
+    box.querySelector('#lockForgot').onclick=async()=>{
+      if(!(await showConfirm('Erase all Khata data stored on this device?\n\nThis cannot be undone. If cloud sync or a Drive backup exists, that copy stays encrypted and still needs the old passcode. You will be signed out on this device.'))) return;
+      try{ if(window.firebase && firebase.apps.length) await firebase.auth().signOut(); }catch(e){}
+      window.__khataNoSync=true;
+      [LS_KEY,LS_PREF,LS_LOCK,LS_LOGO,LS_ATT,'__sync_ts','__synced_ts','__last_uid'].forEach(k=>localStorage.removeItem(k));
+      location.reload();
+    };
+    tick(); setTimeout(()=>{ if(!inp.disabled) inp.focus(); },50);
+  });
+}
+async function lockNow(){ await flushSaves(); location.reload(); }
+let _hiddenAt=0;
+document.addEventListener('visibilitychange',()=>{
+  if(!APP_READY||!KCRYPT.active()) return;
+  if(document.hidden){ _hiddenAt=Date.now(); return; }
+  const m=parseFloat(pref.autoLockMin)||0;
+  if(m>0 && _hiddenAt && Date.now()-_hiddenAt>=m*60000) lockNow();
+});
+async function bootApp(){
+  applyTheme();
+  try{
+    const rawState=localStorage.getItem(LS_KEY), rawPref=localStorage.getItem(LS_PREF), rawLogo=localStorage.getItem(LS_LOGO), verifier=localStorage.getItem(LS_LOCK);
+    if(KCRYPT.isEnc(rawState)||KCRYPT.isEnc(rawPref)||KCRYPT.isEnc(rawLogo)||verifier){
+      const probe=[rawState,rawPref,rawLogo,verifier].find(v=>KCRYPT.isEnc(v));
+      await showLockScreen({probe, hasLocal:!!verifier});
+    }
+    const stateStr=await readSecure(LS_KEY);
+    let prefStr=null, synced={};
+    try{ prefStr=await readSecure(LS_PREF); synced=prefStr?(JSON.parse(prefStr)||{}):{}; }catch(e){ console.error('Settings could not be read',e); }
+    try{ LOGO_CACHE=(await readSecure(LS_LOGO))||''; }catch(e){ LOGO_CACHE=''; }
+    let parsed=null; try{ parsed=stateStr?JSON.parse(stateStr):null; }catch(e){ parsed=null; }
+    initState(parsed);
+    pref=Object.assign({}, defaultPref, synced, _lsJSON(LS_DEV));
+    _lastPrefStr=prefStr;
+    if(KCRYPT.active()){
+      localStorage.setItem(LS_LOCK, await KCRYPT.encrypt('khata-ok'));
+      const plain=[rawState,rawPref,rawLogo].some(v=>v!=null&&!KCRYPT.isEnc(v));
+      if(plain){ save(); _lastPrefStr=null; savePref(); if(LOGO_CACHE) writeSecure(LS_LOGO,LOGO_CACHE); }  // plaintext arrived from a restore or sync: encrypt it again
+    }
+    APP_READY=true; document.body.classList.remove('locked'); renderAll();
+  }catch(e){
+    console.error(e);
+    const err=document.getElementById('lockErr'); if(err) err.textContent='Could Not Open Data: '+e.message;
+  }
+}
+bootApp();
 </script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -1981,7 +2167,6 @@ renderAll();
 window.__cloud = window.__cloud || { user:null, syncText:'', syncState:'', gdText:'', gdBusy:false };
 const CLOUD = window.__cloud;
 const SYNC_KEYS = ['khata_v5', 'khata_pref_v6'];      // data + brand/format settings (device-only prefs live in khata_dev_v1)
-const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const jparse = (t, d) => { try { return JSON.parse(t); } catch (e) { return d; } };
 
 /* ---- saved accounts on this device (never synced) ---- */
@@ -2125,6 +2310,7 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
     try {
       busy(true, 'Backing up…');
       const token = await getToken();
+      await flushSaves();
       const data = {};
       SYNC_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v != null) data[k] = v; });
       const existing = await findFile(token);
@@ -2191,7 +2377,7 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
   const localTs = () => Number(localStorage.getItem('__sync_ts') || 0);
 
   function touch(k) {
-    if (applying || skip(k)) return;
+    if (applying || window.__khataNoSync || skip(k)) return;
     origSet.call(localStorage, '__sync_ts', String(Date.now()));
     clearTimeout(timer);
     timer = setTimeout(push, 1500);
@@ -2201,6 +2387,7 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
 
   async function push() {
     const u = auth.currentUser; if (!u) return false;
+    await flushSaves();
     if (!localTs()) origSet.call(localStorage, '__sync_ts', String(Date.now()));
     try {
       await db.doc('users/' + u.uid).set({ data: JSON.stringify(snapshot()), ts: localTs() });
