@@ -11,10 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<!-- CONFIG: secrets are not stored in this file. Optionally create config.js next to index.html:
-     window.KHATA_CONFIG = { googleClientId:'...', firebase:{ apiKey:'...', authDomain:'...', projectId:'...', storageBucket:'...', messagingSenderId:'...', appId:'...' } };
-     Restrict the API key by domain in Google Cloud Console. Without config.js the app works locally and cloud sync is disabled. -->
-<script src="config.js" onerror="void 0"></script>
+<!-- CONFIG: Google and Firebase web identifiers live in ONE block (KHATA_DEFAULT_CONFIG) at the start of the cloud script near the end of this file. -->
 <style>
 :root{
   --navy:#0f2038; --navy2:#16304f; --paper:#f8f6f0; --surface:#ffffff; --surface2:#f1ece1;
@@ -287,6 +284,10 @@ body.locked>.mbar,body.locked>.app,body.locked>.mnav{display:none!important}
 #lockScreen .lk-err{color:#f0a9a0;min-height:20px;margin-top:10px;font-size:13px}
 #lockScreen .lk-link{background:none;border:none;color:#a9a08a;text-decoration:underline;margin-top:20px;font-size:12.5px}
 @media print{#lockScreen{display:none!important}}
+html,body{overscroll-behavior-y:none;overscroll-behavior-x:none}
+.sync-banner{display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 14px;margin-bottom:12px;border:1px solid var(--gold);border-radius:8px;background:var(--surface);font-size:13px;line-height:1.45}
+.sync-banner.warn{border-color:#c0392b}
+.sync-banner .sb-btns{display:flex;gap:8px;align-items:center}
 </style>
 </head>
 <body class="locked">
@@ -306,7 +307,7 @@ body.locked>.mbar,body.locked>.app,body.locked>.mnav{display:none!important}
       <button class="nav-btn" id="settingsNavBtn" style="width:100%;text-align:left;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.12);padding:8px 10px;border-radius:6px;cursor:pointer;font-size:12.5px;display:flex;align-items:center;gap:8px">
         ⚙ <span id="lblSettingsBtn">Settings</span>
       </button>
-      <button type="button" class="acct-chip js-acct" title="Manage accounts"><span class="avatar xs js-acct-avatar">G</span><span class="acct-chip-t js-acct-label">Sign in</span></button>
+      <button type="button" class="acct-chip js-acct" title="Manage Accounts"><span class="avatar xs js-acct-avatar">G</span><span class="acct-chip-t js-acct-label">Sign In</span></button>
     </div>
   </aside>
   <main class="main">
@@ -335,6 +336,7 @@ body.locked>.mbar,body.locked>.app,body.locked>.mnav{display:none!important}
         <button class="btn-ghost btn-sm" id="printBtn">Export PDF</button>
       </div>
     </div>
+    <div id="syncBanner" class="sync-banner no-print" role="status"></div>
     <div id="panels"></div>
     <div id="singlePrintHolder"></div>
   </main>
@@ -853,7 +855,7 @@ function renderMobileChrome(){
   nav.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>goTab(b.dataset.t));
   const sheet = document.getElementById('moreSheet'), body = document.getElementById('moreSheetBody');
   body.innerHTML = `<div class="grab"></div>
-    <button type="button" class="sheet-acct js-acct"><span class="avatar sm js-acct-avatar">G</span><span class="acct-meta"><span class="acct-name js-acct-label" style="display:block">Sign in</span><span class="small">Manage accounts</span></span></button>
+    <button type="button" class="sheet-acct js-acct"><span class="avatar sm js-acct-avatar">G</span><span class="acct-meta"><span class="acct-name js-acct-label" style="display:block">Sign In</span><span class="small">Manage Accounts</span></span></button>
     <div class="sheet-grid">${TABS.map(([id])=>`<button type="button" class="sheet-item ${pref.tab===id?'active':''}" data-t="${id}">${SHORT[id]}</button>`).join('')}</div>`;
   body.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>goTab(b.dataset.t));
   document.getElementById('mMoreBtn').onclick = ()=>sheet.classList.add('open');
@@ -2166,6 +2168,26 @@ bootApp();
    ===================================================================== */
 window.__cloud = window.__cloud || { user:null, syncText:'', syncState:'', gdText:'', gdBusy:false };
 const CLOUD = window.__cloud;
+/* ---- CONFIG: edit here. These are PUBLIC web identifiers (not passwords); every Firebase web app ships them.
+   Real protection comes from (1) Firestore rules: users/{uid} readable and writable only by that uid, and
+   (2) restricting the API key to your website address in Google Cloud Console. Optional override: define
+   window.KHATA_CONFIG = {googleClientId:'...', firebase:{...}} before this script. ---- */
+const KHATA_DEFAULT_CONFIG = {
+  googleClientId: '539060012563-quokfjku8f1m98lekljmvmi6o45ian3e.apps.googleusercontent.com',
+  firebase: {
+    apiKey: 'AIzaSyCT7crNv3baTB58MtLnl4h-KocYEW0M0JY',
+    authDomain: 'khat-d682e.firebaseapp.com',
+    projectId: 'khat-d682e',
+    storageBucket: 'khat-d682e.firebasestorage.app',
+    messagingSenderId: '539060012563',
+    appId: '1:539060012563:web:ec5db5755ff7f9a86761e6',
+    measurementId: 'G-600S8Y2K3P'
+  }
+};
+const KHATA_CFG = {
+  googleClientId: (window.KHATA_CONFIG && window.KHATA_CONFIG.googleClientId) || KHATA_DEFAULT_CONFIG.googleClientId,
+  firebase: (window.KHATA_CONFIG && window.KHATA_CONFIG.firebase) || KHATA_DEFAULT_CONFIG.firebase
+};
 const SYNC_KEYS = ['khata_v5', 'khata_pref_v6'];      // data + brand/format settings (device-only prefs live in khata_dev_v1)
 const jparse = (t, d) => { try { return JSON.parse(t); } catch (e) { return d; } };
 
@@ -2181,7 +2203,7 @@ function rememberAccount(u) {
 /* ---- header / sidebar / sheet account labels ---- */
 window.refreshAcctLabels = function () {
   const u = CLOUD.user;
-  const label = u ? (u.email || u.displayName) : 'Sign in';
+  const label = u ? (u.email || u.displayName) : 'Sign In';
   const ini = u ? (u.displayName || u.email || '?').trim().charAt(0).toUpperCase() : 'G';
   document.querySelectorAll('.js-acct-label').forEach(e => e.textContent = label);
   document.querySelectorAll('.js-acct-avatar').forEach(e => e.textContent = ini);
@@ -2200,14 +2222,15 @@ window.renderCloudUI = function () {
       <div class="acct-row">
         <div class="avatar ${u ? '' : 'off'}">${esc(ini)}</div>
         <div class="acct-meta">
-          <div class="acct-name">${u ? esc(u.displayName || u.email) : 'Not connected'}</div>
+          <div class="acct-name">${u ? esc(u.displayName || u.email) : 'Not Connected'}</div>
           ${u && u.displayName ? `<div class="small acct-mail">${esc(u.email)}</div>` : ''}
           ${CLOUD.syncText ? `<div class="sync-line"><span class="sdot ${CLOUD.syncState}"></span>${esc(CLOUD.syncText)}</div>` : ''}
         </div>
       </div>
+      <p class="small" style="margin:10px 0 12px">${u ? 'Your books belong to this Google account. They save automatically, keep working offline, and are removed from this device when you sign out. They stay safe in your account and load again when you sign in.' : 'Guest mode: data stays on this device only. Sign in to save it to your account and use it on other devices.'}</p>
       <div class="btn-row">
-        ${u ? `<button class="btn-primary" id="cManage">Manage accounts</button><button class="btn-ghost" id="cOut">Sign out</button>`
-            : `<button class="btn-primary" id="cIn">Sign in with Google</button>${saved.length ? `<button class="btn-ghost" id="cManage">Manage accounts</button>` : ''}`}
+        ${u ? `<button class="btn-primary" id="cManage">Manage Accounts</button><button class="btn-ghost" id="cOut">Sign Out</button>`
+            : `<button class="btn-primary" id="cIn">Sign In With Google</button>${saved.length ? `<button class="btn-ghost" id="cManage">Manage Accounts</button>` : ''}`}
       </div>
     </div>
     <div class="card">
@@ -2216,7 +2239,7 @@ window.renderCloudUI = function () {
       <div class="btn-row">
         <button class="btn-primary" id="cBk" ${CLOUD.gdBusy ? 'disabled' : ''}>Backup</button>
         <button class="btn-ghost" id="cRs" ${CLOUD.gdBusy ? 'disabled' : ''}>Restore</button>
-        <button class="pill-btn ${choose ? 'active' : ''}" id="cChoose" type="button">Ask account each time</button>
+        <button class="pill-btn ${choose ? 'active' : ''}" id="cChoose" type="button">Ask Account Each Time</button>
       </div>
     </div>`;
   const $ = id => host.querySelector(id);
@@ -2227,7 +2250,21 @@ window.renderCloudUI = function () {
   $('#cRs').onclick = () => window.gdRestore();
   $('#cChoose').onclick = () => { localStorage.setItem('__gd_choose', choose ? '0' : '1'); window.renderCloudUI(); };
 };
-function refreshCloud() { window.renderCloudUI(); if (document.getElementById('acctOverlay')?.classList.contains('open')) renderAcctModal(); }
+window.updateBanner = function () {
+  const b = document.getElementById('syncBanner'); if (!b) return;
+  const offline = navigator.onLine === false;
+  let html = '', warn = false;
+  if (window.__cloudOff || !CLOUD.ready) html = '';
+  else if (!CLOUD.user) {
+    let dismissed = false; try { dismissed = !!sessionStorage.getItem('__guest_dismiss'); } catch (e) {}
+    if (!dismissed) html = '<span><b>Guest Mode:</b> Nothing here is saved to an account. Sign in with Google to keep your data safe and synced.</span><span class="sb-btns"><button class="btn-primary btn-sm" id="sbIn" type="button">Sign In</button><button class="btn-ghost btn-sm" id="sbX" type="button" aria-label="Dismiss">Dismiss</button></span>';
+  } else if (offline) html = '<span><b>You Are Offline:</b> Changes are saved on this device and will sync to your account automatically when you are back online.</span>';
+  else if (CLOUD.syncState === 'err') { warn = true; html = '<span><b>Sync Problem:</b> ' + esc(CLOUD.syncText) + '. Retrying automatically.</span>'; }
+  b.className = 'sync-banner no-print' + (warn ? ' warn' : ''); b.style.display = html ? 'flex' : 'none'; b.innerHTML = html;
+  const i = b.querySelector('#sbIn'); if (i) i.onclick = () => window.syncLogin();
+  const x = b.querySelector('#sbX'); if (x) x.onclick = () => { try { sessionStorage.setItem('__guest_dismiss', '1'); } catch (e) {} window.updateBanner(); };
+};
+function refreshCloud() { window.renderCloudUI(); window.updateBanner(); if (document.getElementById('acctOverlay')?.classList.contains('open')) renderAcctModal(); }
 
 /* ---- Manage Accounts modal (same theme as the app's dialogs) ---- */
 function acctOverlay() {
@@ -2235,7 +2272,7 @@ function acctOverlay() {
   if (!ov) {
     ov = document.createElement('div'); ov.id = 'acctOverlay'; ov.className = 'modal-overlay no-print';
     ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
-    ov.innerHTML = '<div class="modal-card wide"><div class="modal-title">Manage accounts</div><div id="acctBody"></div></div>';
+    ov.innerHTML = '<div class="modal-card wide"><div class="modal-title">Manage Accounts</div><div id="acctBody"></div></div>';
     ov.onclick = e => { if (e.target === ov) ov.classList.remove('open'); };
     document.body.appendChild(ov);
   }
@@ -2255,11 +2292,11 @@ function renderAcctModal() {
         ${active ? `<span class="tag" style="color:var(--gold);border-color:var(--gold)">Active</span>`
                  : `<button class="btn-ghost btn-sm" data-sw="${esc(a.email)}">Switch</button><button class="rowbtn danger" data-rm="${esc(a.uid)}" title="Remove from this list">✕</button>`}
       </div>`;
-    }).join('') : `<p class="empty">No account added yet.</p>`}
+    }).join('') : `<p class="empty">No Account Added Yet.</p>`}
     <div class="modal-btns" style="justify-content:space-between;margin-top:14px">
-      <button class="btn-ghost btn-sm" id="acAdd">+ Add account</button>
+      <button class="btn-ghost btn-sm" id="acAdd">+ Add Account</button>
       <span style="display:flex;gap:8px">
-        ${cur ? `<button class="btn-ghost btn-sm" id="acOut">Sign out</button>` : ''}
+        ${cur ? `<button class="btn-ghost btn-sm" id="acOut">Sign Out</button>` : ''}
         <button class="btn-primary btn-sm" id="acDone">Done</button>
       </span>
     </div>`;
@@ -2274,7 +2311,7 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
 
 /* ============ 1) GOOGLE DRIVE BACKUP / RESTORE ============ */
 (function () {
-  const CLIENT_ID = (window.KHATA_CONFIG && window.KHATA_CONFIG.googleClientId) || 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com';
+  const CLIENT_ID = KHATA_CFG.googleClientId;
   const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
   const FILE = 'khata-backup.json';
   const setLS = Storage.prototype.setItem;
@@ -2283,8 +2320,8 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
 
   function getToken() {
     return new Promise((res, rej) => {
-      if (/^YOUR_/.test(CLIENT_ID)) return rej(new Error('Google client ID is not configured (see config.js note at the top of index.html).'));
-      if (!window.google || !google.accounts) return rej(new Error('Google script load nahi hui. Internet check karein.'));
+      if (/^YOUR_/.test(CLIENT_ID)) return rej(new Error('Google client ID is missing in the config block.'));
+      if (!window.google || !google.accounts) return rej(new Error('Google sign-in script did not load. Check your internet connection.'));
       const opts = {};
       if (localStorage.getItem('__gd_choose') === '1') opts.prompt = 'select_account';
       else if (CLOUD.user && CLOUD.user.email) opts.hint = CLOUD.user.email;
@@ -2308,7 +2345,7 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
   window.gdBackup = async function () {
     if (CLOUD.gdBusy) return;
     try {
-      busy(true, 'Backing up…');
+      busy(true, 'Backing Up...');
       const token = await getToken();
       await flushSaves();
       const data = {};
@@ -2322,45 +2359,46 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
         ? 'https://www.googleapis.com/upload/drive/v3/files/' + existing.id + '?uploadType=multipart'
         : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
       const r = await fetch(url, { method: existing ? 'PATCH' : 'POST', headers: { Authorization: 'Bearer ' + token }, body: form });
-      if (!r.ok) throw new Error('Upload fail ' + r.status);
+      if (!r.ok) throw new Error('Upload Failed ' + r.status);
       const t = new Date().toLocaleString();
       setLS.call(localStorage, '__gd_last', t);
       busy(false, 'Last backup: ' + t);
-      showToast('Backup ho gaya');
+      showToast('Backup Complete');
     } catch (e) {
       busy(false, idleText());
-      if (!cancelled(e)) await showAlert('Backup fail: ' + e.message);
+      if (!cancelled(e)) await showAlert('Backup Failed: ' + e.message);
     }
   };
 
   window.gdRestore = async function () {
     if (CLOUD.gdBusy) return;
     try {
-      busy(true, 'Checking backup…');
+      busy(true, 'Checking Backup...');
       const token = await getToken();
       const f = await findFile(token);
       busy(false, idleText());
-      if (!f) { await showAlert('Drive par koi backup nahi mila.'); return; }
-      if (!(await showConfirm('Restore se maujooda data backup wale data se badal jayega. Continue?'))) return;
-      busy(true, 'Restoring…');
+      if (!f) { await showAlert('No Backup Was Found In Google Drive.'); return; }
+      if (!(await showConfirm('Restore will replace the current data with the backup data. Continue?'))) return;
+      busy(true, 'Restoring...');
       const r = await fetch('https://www.googleapis.com/drive/v3/files/' + f.id + '?alt=media', { headers: { Authorization: 'Bearer ' + token } });
-      if (!r.ok) throw new Error('Download fail ' + r.status);
+      if (!r.ok) throw new Error('Download Failed ' + r.status);
       const obj = await r.json();
       SYNC_KEYS.forEach(k => { if (k in obj) localStorage.setItem(k, obj[k]); });
-      await showAlert('Restore ho gaya. App reload hogi.');
+      await showAlert('Restore complete. The app will reload.');
       location.reload();
     } catch (e) {
       busy(false, idleText());
-      if (!cancelled(e)) await showAlert('Restore fail: ' + e.message);
+      if (!cancelled(e)) await showAlert('Restore Failed: ' + e.message);
     }
   };
 })();
 
 /* ============ 2) FIREBASE LIVE SYNC ============ */
 (function () {
-  const FB = (window.KHATA_CONFIG && window.KHATA_CONFIG.firebase) || { apiKey:'YOUR_FIREBASE_API_KEY', authDomain:'YOUR_PROJECT.firebaseapp.com', projectId:'YOUR_PROJECT_ID', storageBucket:'YOUR_PROJECT.firebasestorage.app', messagingSenderId:'YOUR_SENDER_ID', appId:'YOUR_APP_ID' };
-  if (!window.firebase || /^YOUR_/.test(FB.apiKey)) {   // offline / script blocked: app still works locally
-    const off = async () => { await showAlert('Cloud sync is not configured or you are offline. See the config.js note at the top of index.html.'); };
+  const FB = KHATA_CFG.firebase;
+  if (!window.firebase || !FB || /^YOUR_/.test(FB.apiKey || '')) {
+    window.__cloudOff = true;   // offline / script blocked: app still works locally
+    const off = async () => { await showAlert('Cloud sync could not start. Check your internet connection and reload the app.'); };
     window.syncLogin = off; window.syncSwitch = off; window.syncLogout = off;
     return;
   }
@@ -2368,18 +2406,38 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
 
   const auth = firebase.auth(), db = firebase.firestore();
   const PREF_KEY = 'khata_pref_v6';
-  const skip = k => !SYNC_KEYS.includes(k);   // FIX: earlier only khata_v5 synced, so brand/settings never reached the other device
-  const setStatus = (text, state) => { CLOUD.syncText = text || ''; CLOUD.syncState = state || ''; refreshCloud(); };
+  // Everything that belongs to the signed-in account on this device. All of it is removed on sign out.
+  const OWNED = ['khata_v5', 'khata_pref_v6', 'khata_logo_v1', 'khata_lock_v1', 'khata_att_v1', '__sync_ts', '__synced_ts', '__last_uid', '__gd_last'];
+  const skip = k => !SYNC_KEYS.includes(k);
+  const setStatus = (text, state) => {
+    text = text || ''; state = state || '';
+    if (CLOUD.syncText === text && CLOUD.syncState === state) return;
+    CLOUD.syncText = text; CLOUD.syncState = state; refreshCloud();
+  };
   const origSet = Storage.prototype.setItem, origRem = Storage.prototype.removeItem;
   let applying = false, timer = null, unsub = null, switching = false;
-
+  const OFFLINE_TEXT = 'Offline: Changes Are Saved On This Device And Will Sync Automatically';
+  const online = () => navigator.onLine !== false;
   const snapshot = () => { const o = {}; SYNC_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v != null) o[k] = v; }); return o; };
   const localTs = () => Number(localStorage.getItem('__sync_ts') || 0);
+  const syncedTs = () => Number(localStorage.getItem('__synced_ts') || 0);
+  const unsynced = () => localTs() > syncedTs();
+  const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+
+  // true when this device holds real books (not just an empty starter file)
+  function localHasData() {
+    const raw = localStorage.getItem('khata_v5'); if (!raw) return false;
+    if (raw.startsWith('enc1:')) return true;
+    const o = jparse(raw, null); if (!o) return false;
+    return !!((o.accounts && o.accounts.length) || (o.entries && o.entries.length) || (o.auditClients && o.auditClients.length) ||
+              (o.cashRecon && o.cashRecon.length) || (o.cashCounts && o.cashCounts.length) || (o.years && o.years.length > 1));
+  }
 
   function touch(k) {
     if (applying || window.__khataNoSync || skip(k)) return;
     origSet.call(localStorage, '__sync_ts', String(Date.now()));
     clearTimeout(timer);
+    if (auth.currentUser) setStatus(online() ? 'Saving...' : OFFLINE_TEXT, 'busy');
     timer = setTimeout(push, 1500);
   }
   Storage.prototype.setItem = function (k, v) { origSet.call(this, k, v); if (this === localStorage) touch(k); };
@@ -2389,14 +2447,27 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
     const u = auth.currentUser; if (!u) return false;
     await flushSaves();
     if (!localTs()) origSet.call(localStorage, '__sync_ts', String(Date.now()));
+    if (!online()) { setStatus(OFFLINE_TEXT, 'busy'); return false; }   // never hand a write to the network when there is none
+    setStatus('Saving...', 'busy');
+    const ts = localTs();                                              // edits made while this upload runs keep the device marked as unsynced
     try {
-      await db.doc('users/' + u.uid).set({ data: JSON.stringify(snapshot()), ts: localTs() });
-      origSet.call(localStorage, '__synced_ts', String(localTs()));
+      await withTimeout(db.doc('users/' + u.uid).set({ data: JSON.stringify(snapshot()), ts }), 20000);
+      origSet.call(localStorage, '__synced_ts', String(ts));
       origSet.call(localStorage, '__last_uid', u.uid);
       setStatus('Synced', 'ok');
       return true;
-    } catch (e) { setStatus('Sync error: ' + e.message, 'err'); return false; }
+    } catch (e) {
+      setStatus(e.message === 'timeout' ? 'Connection Is Slow Or Offline. Will Retry Automatically' : 'Sync Error: ' + e.message, e.message === 'timeout' ? 'busy' : 'err');
+      return false;
+    }
   }
+
+  // Offline edits go up by themselves as soon as the connection is back (and every 20s while anything is pending).
+  function retry() { if (auth.currentUser && !switching && online() && unsynced()) push(); }
+  window.addEventListener('online', () => { refreshCloud(); setTimeout(retry, 800); });
+  window.addEventListener('offline', () => { if (auth.currentUser) setStatus(OFFLINE_TEXT, 'busy'); refreshCloud(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) retry(); });
+  setInterval(retry, 20000);
 
   function applyRemote(remote, force) {
     const obj = remote.data ? jparse(remote.data, {}) : {};
@@ -2407,20 +2478,40 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
     });
     const keptPrefs = !(PREF_KEY in obj) && !force && localStorage.getItem(PREF_KEY);
     origSet.call(localStorage, '__sync_ts', String(keptPrefs ? Date.now() : remote.ts));   // newer ts => settings get pushed after reload
-    origSet.call(localStorage, '__synced_ts', String(keptPrefs ? remote.ts : remote.ts));
+    origSet.call(localStorage, '__synced_ts', String(remote.ts));
     if (auth.currentUser) origSet.call(localStorage, '__last_uid', auth.currentUser.uid);
     applying = false;
     location.reload();
   }
 
+  // Remove this account's data from the device, sign out, and come back as an empty guest.
+  async function wipeAndReload(doSignOut) {
+    clearTimeout(timer); applying = true; window.__khataNoSync = true;
+    if (unsub) { unsub(); unsub = null; }
+    if (doSignOut) { try { await auth.signOut(); } catch (e) {} }
+    OWNED.forEach(k => origRem.call(localStorage, k));
+    location.reload();
+  }
+
+  // The signed-in account is not the one that owns the data on this device (or the device data is guest data).
   async function handleSwitched(u, s) {
     if (switching) return; switching = true;
-    const unsynced = localTs() > Number(localStorage.getItem('__synced_ts') || 0);
-    if (unsynced && !(await showConfirm('Is device par aisa data hai jo pichhle account me sync nahi hua. Naye account ka data load karne par wo replace ho jayega. Continue?'))) {
-      switching = false; if (unsub) unsub(); await auth.signOut(); return;
+    const prev = localStorage.getItem('__last_uid');   // null = guest data
+    const hasData = localHasData();
+    if (s.exists) {
+      // The account already has data in the cloud: the account wins.
+      if (hasData && (prev === null || unsynced())) {
+        if (!(await showConfirm('This device has data that is not saved to any account. Signing in will replace it with the data from ' + (u.email || 'this account') + '. Continue?'))) {
+          switching = false; if (unsub) { unsub(); unsub = null; } await auth.signOut(); return;
+        }
+      }
+      return applyRemote(s.data(), true);
     }
-    if (s.exists) return applyRemote(s.data(), true);
-    applying = true;                                  // brand-new account: start with empty books
+    if (prev === null) {                                // brand-new account: it adopts what is on this device
+      origSet.call(localStorage, '__last_uid', u.uid);
+      switching = false; showToast('Your data is now saved to your account'); return push();
+    }
+    applying = true;                                    // brand-new account that replaces another account's data: start empty
     SYNC_KEYS.forEach(k => origRem.call(localStorage, k));
     origRem.call(localStorage, '__sync_ts'); origRem.call(localStorage, '__synced_ts');
     origSet.call(localStorage, '__last_uid', u.uid);
@@ -2432,23 +2523,30 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
     if (unsub) unsub();
     unsub = db.doc('users/' + u.uid).onSnapshot(async s => {
       if (s.metadata.hasPendingWrites) return;
-      const prev = localStorage.getItem('__last_uid');
-      if (prev && prev !== u.uid) return handleSwitched(u, s);
-      origSet.call(localStorage, '__last_uid', u.uid);
+      if (s.metadata.fromCache) { if (!online()) setStatus(OFFLINE_TEXT, 'busy'); return; }   // never act on anything the server has not confirmed
+      if (localStorage.getItem('__last_uid') !== u.uid) return handleSwitched(u, s);
       if (!s.exists) return push();
       const remote = s.data();
       const robj = remote.data ? jparse(remote.data, {}) : {};
-      if (remote.ts > localTs()) applyRemote(remote);
+      if (remote.ts > localTs()) {
+        if (unsynced() && remote.ts > syncedTs()) {     // edited here while offline AND changed elsewhere
+          if (switching) return; switching = true;
+          const keepMine = await showConfirm('Changes were made on this device while offline, and also on another device.\n\nOK keeps this device\'s changes (the other device\'s newer changes are replaced).\nCancel loads the account data (this device\'s offline changes are discarded).');
+          switching = false;
+          if (keepMine) { origSet.call(localStorage, '__sync_ts', String(Math.max(Date.now(), remote.ts + 1))); return push(); }
+        }
+        applyRemote(remote);
+      }
       else if (remote.ts < localTs()) push();
       else if (!(PREF_KEY in robj) && localStorage.getItem(PREF_KEY)) push();
       else setStatus('Synced', 'ok');
-    }, e => setStatus('Sync error: ' + e.message, 'err'));
+    }, e => setStatus('Sync Error: ' + e.message, 'err'));
   }
 
   auth.onAuthStateChanged(u => {
-    CLOUD.user = u;
-    if (u) { rememberAccount(u); setStatus('Connecting…', 'busy'); listen(u); }
-    else { if (unsub) unsub(); setStatus('', ''); }
+    CLOUD.user = u; CLOUD.ready = true;
+    if (u) { rememberAccount(u); setStatus(online() ? 'Connecting...' : OFFLINE_TEXT, 'busy'); listen(u); }
+    else { if (unsub) { unsub(); unsub = null; } setStatus('', ''); }
     refreshCloud();
   });
 
@@ -2457,26 +2555,46 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
     p.setCustomParameters(Object.assign({ prompt: 'select_account' }, email ? { login_hint: email } : {}));
     return p;
   };
+  const loginError = e => {
+    const c = e.code || '';
+    if (c === 'auth/unauthorized-domain') return 'This website address is not authorised for sign-in. Add it in Firebase Console: Authentication, Settings, Authorized Domains.';
+    if (c === 'auth/network-request-failed') return 'No internet connection. Connect and try again.';
+    return e.message;
+  };
   window.syncLogin = async function (email) {
+    if (!online()) { await showAlert('You are offline. Connect to the internet to sign in. Your data on this device keeps working.'); return; }
     try { await auth.signInWithPopup(provider(email)); }
-    catch (e) { if (!/popup-closed|cancelled-popup/.test(e.code || '')) await showAlert('Login fail: ' + e.message); }
+    catch (e) {
+      const c = e.code || '';
+      if (/popup-closed|cancelled-popup/.test(c)) return;
+      if (c === 'auth/popup-blocked' || c === 'auth/operation-not-supported-in-this-environment') { try { await auth.signInWithRedirect(provider(email)); return; } catch (e2) { e = e2; } }
+      await showAlert('Sign In Failed: ' + loginError(e));
+    }
   };
   window.syncSwitch = async function (email) {
     if (auth.currentUser) {
-      if (!(await showConfirm('Account switch karne par is device ka data naye account ke cloud data se replace ho jayega. Purane account ka data uske cloud me safe rahega. Continue?'))) return;
+      if (!(await showConfirm('Switching accounts replaces the data on this device with the new account\'s data. The current account\'s data stays safe in its cloud. Continue?'))) return;
       clearTimeout(timer);
-      if (!(await push())) { await showAlert('Abhi sync complete nahi hua, isliye account switch nahi ho saka. Internet check karke dobara koshish karein.'); return; }
+      if (!(await push())) { await showAlert('Your latest changes have not synced yet, so the account cannot be switched. Check your internet connection and try again.'); return; }
     }
     await window.syncLogin(email);
   };
   window.syncLogout = async function () {
-    if (!(await showConfirm('Sign out karein? Is device ka data yahin rahega.'))) return;
-    clearTimeout(timer); await push();
-    await auth.signOut();
+    if (!auth.currentUser) return;
+    clearTimeout(timer);
+    if (unsynced()) showToast('Syncing Before Sign Out...');
+    const pushed = await push();
+    const pending = !pushed && unsynced();
+    const msg = pending
+      ? 'Some recent changes have not reached your account yet (you may be offline). If you sign out now, those changes will be lost.\n\nSign out and remove the data from this device anyway?'
+      : 'Sign out? The data on this device will be removed. It stays safe in your Google account and loads again when you sign in.';
+    if (!(await showConfirm(msg))) { if (unsynced()) retry(); return; }
     acctOverlay().classList.remove('open');
-    showToast('Signed out');
+    await wipeAndReload(true);
   };
 })();
+
+window.updateBanner();
 
 window.renderCloudUI();
 </script>
